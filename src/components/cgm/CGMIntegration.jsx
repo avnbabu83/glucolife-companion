@@ -4,9 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, Link2, Unlink, RefreshCw, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { base44 } from '@/api/base44Client';
+import { toast } from "sonner";
+import LibreConnect from './LibreConnect';
 
-export default function CGMIntegration({ currentDevice, onDeviceChange, latestReadings = [] }) {
+export default function CGMIntegration({ currentDevice, onDeviceChange, latestReadings = [], libreConnected = false, onLibreConnected }) {
   const [connecting, setConnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showLibreConnect, setShowLibreConnect] = useState(false);
 
   const devices = [
     { id: 'libre2', name: 'Freestyle Libre 2', logo: '📱', status: 'available' },
@@ -29,6 +34,25 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
     onDeviceChange?.('none');
   };
 
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    try {
+      const response = await base44.functions.invoke('syncLibreData', {});
+      if (response.data.success) {
+        toast.success(`Synced ${response.data.synced} new readings`);
+      } else if (response.data.needsAuth) {
+        toast.error('Please connect your LibreView account first');
+        setShowLibreConnect(true);
+      } else {
+        toast.error(response.data.error || 'Sync failed');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to sync data');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-3">
@@ -39,27 +63,55 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
       </CardHeader>
       <CardContent className="space-y-4">
         {currentDevice && currentDevice !== 'none' ? (
-          <div className="p-4 bg-emerald-50 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
-                <div>
-                  <p className="font-semibold text-emerald-800">
-                    {devices.find(d => d.id === currentDevice)?.name || currentDevice}
-                  </p>
-                  <p className="text-sm text-emerald-600">Connected & syncing</p>
+          <div className="space-y-4">
+            <div className="p-4 bg-emerald-50 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <p className="font-semibold text-emerald-800">
+                      {devices.find(d => d.id === currentDevice)?.name || currentDevice}
+                    </p>
+                    <p className="text-sm text-emerald-600">
+                      {libreConnected ? 'Connected to LibreView' : 'Device selected'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {(currentDevice === 'libre2' || currentDevice === 'libre3') && libreConnected && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleSyncNow}
+                      disabled={syncing}
+                    >
+                      {syncing ? (
+                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                      )}
+                      Sync Now
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={handleDisconnect}
+                    className="text-rose-600 hover:bg-rose-50"
+                  >
+                    <Unlink className="w-4 h-4 mr-1" />
+                    Disconnect
+                  </Button>
                 </div>
               </div>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleDisconnect}
-                className="text-rose-600 hover:bg-rose-50"
-              >
-                <Unlink className="w-4 h-4 mr-1" />
-                Disconnect
-              </Button>
             </div>
+
+            {(currentDevice === 'libre2' || currentDevice === 'libre3') && !libreConnected && (
+              <LibreConnect onConnected={() => {
+                onLibreConnected?.();
+                setShowLibreConnect(false);
+              }} />
+            )}
             
             {latestReadings.length > 0 && (
               <div className="mt-4 pt-4 border-t border-emerald-200">
@@ -123,13 +175,12 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
           </>
         )}
         
-        <div className="mt-4 p-3 bg-amber-50 rounded-lg">
-          <p className="text-xs text-amber-700">
-            <strong>Important:</strong> This is a UI placeholder. Real CGM integration requires backend functions 
-            to connect with Abbott/Dexcom APIs. Currently, you can manually log readings or use CSV import features 
-            once backend functions are enabled. Contact support to enable real-time CGM sync.
-          </p>
-        </div>
+        {showLibreConnect && (
+          <LibreConnect onConnected={() => {
+            onLibreConnected?.();
+            setShowLibreConnect(false);
+          }} />
+        )}
       </CardContent>
     </Card>
   );

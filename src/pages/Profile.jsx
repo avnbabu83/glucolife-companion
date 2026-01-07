@@ -145,6 +145,8 @@ export default function Profile() {
               currentDevice={profile?.cgm_device}
               onDeviceChange={handleCGMChange}
               latestReadings={glucoseReadings}
+              libreConnected={!!profile?.libre_access_token}
+              onLibreConnected={() => queryClient.invalidateQueries({ queryKey: ['userProfile'] })}
             />
           </TabsContent>
 
