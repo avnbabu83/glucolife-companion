@@ -125,8 +125,9 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
         
         <div className="mt-4 p-3 bg-amber-50 rounded-lg">
           <p className="text-xs text-amber-700">
-            <strong>Note:</strong> CGM data sync requires your device's companion app to be installed 
-            and logged in. Readings sync every 5 minutes when connected.
+            <strong>Important:</strong> This is a UI placeholder. Real CGM integration requires backend functions 
+            to connect with Abbott/Dexcom APIs. Currently, you can manually log readings or use CSV import features 
+            once backend functions are enabled. Contact support to enable real-time CGM sync.
           </p>
         </div>
       </CardContent>

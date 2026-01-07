@@ -1,21 +1,23 @@
+import Exercise from './pages/Exercise';
+import Glucose from './pages/Glucose';
 import Home from './pages/Home';
 import Meals from './pages/Meals';
-import Glucose from './pages/Glucose';
 import Medications from './pages/Medications';
-import Exercise from './pages/Exercise';
-import Sleep from './pages/Sleep';
 import Profile from './pages/Profile';
+import Sleep from './pages/Sleep';
+import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Exercise": Exercise,
+    "Glucose": Glucose,
     "Home": Home,
     "Meals": Meals,
-    "Glucose": Glucose,
     "Medications": Medications,
-    "Exercise": Exercise,
-    "Sleep": Sleep,
     "Profile": Profile,
+    "Sleep": Sleep,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {

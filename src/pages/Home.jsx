@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   Activity, 
@@ -25,6 +25,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
   const today = moment().format('YYYY-MM-DD');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -34,10 +35,17 @@ export default function Home() {
     loadUser();
   }, []);
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile'],
     queryFn: () => base44.entities.UserProfile.list(),
   });
+
+  // Redirect to onboarding if no profile
+  useEffect(() => {
+    if (!profileLoading && (!profile || profile.length === 0)) {
+      navigate(createPageUrl('Onboarding'));
+    }
+  }, [profile, profileLoading, navigate]);
 
   const { data: todayMeals = [] } = useQuery({
     queryKey: ['todayMeals', today],
@@ -70,6 +78,19 @@ export default function Home() {
   });
 
   const userProfile = profile?.[0];
+  
+  // Show loading while checking profile
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
   const latestGlucose = todayGlucose.sort((a, b) => 
     moment(b.reading_time, 'HH:mm').diff(moment(a.reading_time, 'HH:mm'))
   )[0]?.reading;
@@ -109,21 +130,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Profile Setup Prompt */}
-        {!userProfile && (
-          <div className="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl text-white">
-            <h2 className="text-xl font-bold mb-2">Welcome to GlucoGuide!</h2>
-            <p className="text-emerald-100 mb-4">
-              Let's set up your health profile to get personalized meal plans and recommendations.
-            </p>
-            <Link to={createPageUrl('Profile')}>
-              <Button className="bg-white text-emerald-600 hover:bg-emerald-50">
-                Complete Profile
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        )}
+
 
         {/* Quick Stats */}
         <QuickStats 
