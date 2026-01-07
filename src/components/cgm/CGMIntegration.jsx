@@ -73,7 +73,7 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
                       {devices.find(d => d.id === currentDevice)?.name || currentDevice}
                     </p>
                     <p className="text-sm text-emerald-600">
-                      {libreConnected ? 'Data sharing active' : 'Device selected'}
+                      {libreConnected ? 'LibreLinkUp connected' : 'Device selected'}
                     </p>
                   </div>
                 </div>
