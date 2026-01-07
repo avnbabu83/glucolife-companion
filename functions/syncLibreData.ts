@@ -41,8 +41,32 @@ Deno.serve(async (req) => {
       }, { status: response.status });
     }
 
-    const data = await response.json();
-    console.log('LibreView API response:', JSON.stringify(data, null, 2));
+    let data;
+    const contentType = response.headers.get('content-type');
+    const responseText = await response.text();
+    
+    console.log('Response content-type:', contentType);
+    console.log('Response preview:', responseText.substring(0, 500));
+    
+    if (!contentType?.includes('application/json')) {
+      return Response.json({ 
+        error: 'LibreView returned HTML instead of JSON. The sharing code API endpoint may not be publicly accessible.',
+        suggestion: 'LibreView sharing codes may only work in the browser. Consider using manual entry or Abbott\'s official API.',
+        contentType,
+        responsePreview: responseText.substring(0, 200)
+      }, { status: 500 });
+    }
+    
+    try {
+      data = JSON.parse(responseText);
+      console.log('LibreView API response:', JSON.stringify(data, null, 2));
+    } catch (parseError) {
+      return Response.json({ 
+        error: 'Failed to parse LibreView response',
+        details: parseError.message,
+        responsePreview: responseText.substring(0, 200)
+      }, { status: 500 });
+    }
     
     // Extract glucose readings from LibreView Data Share API response
     const readings = [];
