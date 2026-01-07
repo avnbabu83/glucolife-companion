@@ -18,12 +18,16 @@ export default function AIRecommendations({
   const generateInsights = async () => {
     setLoading(true);
     try {
-      const prompt = `Analyze this diabetes management data and provide personalized recommendations:
+      const sleep = await base44.entities.SleepLog.list('-date', 7);
+      const activity = await base44.entities.ActivityData.list('-date', 7);
+
+      const prompt = `Analyze this comprehensive diabetes and health data to provide holistic personalized recommendations:
 
 User Profile:
 - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
 - Dietary Preference: ${userProfile?.dietary_preference || 'omnivore'}
 - Target Glucose Range: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL
+- Wearable Connected: ${userProfile?.wearable_device || 'none'}
 
 Recent Glucose Readings (last 7 days):
 ${glucoseReadings.slice(0, 20).map(r => `- ${r.reading} mg/dL at ${r.reading_time} (${r.context || 'random'})`).join('\n')}
@@ -31,12 +35,19 @@ ${glucoseReadings.slice(0, 20).map(r => `- ${r.reading} mg/dL at ${r.reading_tim
 Recent Meals:
 ${mealHistory.slice(0, 10).map(m => `- ${m.meal_name} (${m.meal_type}): ${m.carbs}g carbs, GI: ${m.glycemic_index}`).join('\n')}
 
-Provide:
-1. Key patterns observed
-2. Diet recommendations specific to their preference
-3. Meal timing suggestions
-4. Foods to include/avoid
-5. Exercise recommendations`;
+Sleep Data (last 7 days):
+${sleep.map(s => `- ${s.date}: ${s.total_hours}hrs (${s.quality}), deep: ${s.deep_sleep_minutes || 'N/A'}min, morning glucose: ${s.morning_glucose || 'N/A'}`).join('\n')}
+
+Activity Data (last 7 days):
+${activity.map(a => `- ${a.date}: ${a.steps || 0} steps, ${a.active_minutes || 0}min active, ${a.calories_burned || 0} cal, avg HR: ${a.heart_rate_avg || 'N/A'}`).join('\n')}
+
+Analyze correlations between:
+- Sleep quality/duration and morning glucose levels
+- Activity levels and glucose stability throughout the day
+- Heart rate patterns during activities and glucose trends
+- Overall lifestyle balance impact on diabetes control
+
+Provide comprehensive insights including patterns in glucose, sleep, activity, and diet with actionable recommendations.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
@@ -45,7 +56,8 @@ Provide:
           properties: {
             patterns: {
               type: "array",
-              items: { type: "string" }
+              items: { type: "string" },
+              description: "Key patterns in glucose, sleep, activity, and lifestyle"
             },
             diet_recommendations: {
               type: "array",
