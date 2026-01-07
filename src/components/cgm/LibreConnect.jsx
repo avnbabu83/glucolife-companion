@@ -19,7 +19,19 @@ export default function LibreConnect({ onConnected }) {
       const response = await base44.functions.invoke('connectLibre', { sharingCode });
       
       if (response.data.success) {
-        toast.success('Successfully connected to LibreView!');
+        toast.success('Successfully connected! Syncing data...');
+        
+        // Auto-sync after successful connection
+        try {
+          const syncResponse = await base44.functions.invoke('syncLibreData', {});
+          if (syncResponse.data.success) {
+            toast.success(`Synced ${syncResponse.data.synced} glucose readings!`);
+          }
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+          toast.error('Connected but sync failed. Try "Sync Now" button.');
+        }
+        
         onConnected?.();
       } else {
         toast.error(response.data.error || 'Connection failed');
