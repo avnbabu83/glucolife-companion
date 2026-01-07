@@ -6,6 +6,7 @@ import Medications from './pages/Medications';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
+import CGMDashboard from './pages/CGMDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
+    "CGMDashboard": CGMDashboard,
 }
 
 export const pagesConfig = {

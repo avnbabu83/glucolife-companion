@@ -1,0 +1,450 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import moment from 'moment';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Activity, 
+  TrendingUp, 
+  TrendingDown, 
+  Minus,
+  RefreshCw,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  ArrowUp,
+  ArrowDown,
+  Bell
+} from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+export default function CGMDashboard() {
+  const [syncing, setSyncing] = useState(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const { data: readings = [], refetch } = useQuery({
+    queryKey: ['allGlucoseReadings'],
+    queryFn: () => base44.entities.GlucoseReading.list('-created_date', 288), // 24h of readings every 5min
+  });
+
+  const userProfile = profile?.[0];
+  const targetMin = userProfile?.target_glucose_min || 70;
+  const targetMax = userProfile?.target_glucose_max || 140;
+  const cgmConnected = userProfile?.cgm_device && userProfile.cgm_device !== 'none';
+
+  // Filter last 24 hours
+  const last24h = readings.filter(r => 
+    moment(r.created_date).isAfter(moment().subtract(24, 'hours'))
+  );
+
+  // Latest reading
+  const latestReading = readings[0];
+
+  // Calculate stats
+  const stats = {
+    current: latestReading?.reading || null,
+    trend: latestReading?.trend || 'stable',
+    average: last24h.length > 0 
+      ? Math.round(last24h.reduce((sum, r) => sum + r.reading, 0) / last24h.length)
+      : null,
+    inRange: last24h.filter(r => r.reading >= targetMin && r.reading <= targetMax).length,
+    high: last24h.filter(r => r.reading > targetMax).length,
+    low: last24h.filter(r => r.reading < targetMin).length,
+    total: last24h.length,
+    timeInRange: last24h.length > 0 
+      ? Math.round((last24h.filter(r => r.reading >= targetMin && r.reading <= targetMax).length / last24h.length) * 100)
+      : 0
+  };
+
+  // Chart data
+  const chartData = last24h
+    .sort((a, b) => moment(a.created_date).diff(moment(b.created_date)))
+    .map(r => ({
+      time: moment(r.created_date).format('HH:mm'),
+      glucose: r.reading,
+      trend: r.trend
+    }));
+
+  const getTrendIcon = (trend) => {
+    switch (trend) {
+      case 'rising_fast': return <ArrowUp className="w-5 h-5 text-rose-600" />;
+      case 'rising': return <TrendingUp className="w-5 h-5 text-orange-500" />;
+      case 'falling_fast': return <ArrowDown className="w-5 h-5 text-blue-600" />;
+      case 'falling': return <TrendingDown className="w-5 h-5 text-blue-500" />;
+      default: return <Minus className="w-5 h-5 text-slate-400" />;
+    }
+  };
+
+  const getTrendText = (trend) => {
+    const trendMap = {
+      'rising_fast': 'Rising Fast',
+      'rising': 'Rising',
+      'stable': 'Stable',
+      'falling': 'Falling',
+      'falling_fast': 'Falling Fast'
+    };
+    return trendMap[trend] || 'Stable';
+  };
+
+  const getGlucoseColor = (reading) => {
+    if (reading < targetMin) return 'text-amber-600';
+    if (reading > targetMax) return 'text-rose-600';
+    return 'text-emerald-600';
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await base44.functions.invoke('syncLibreData', {});
+      if (response.data.success) {
+        toast.success(`Synced ${response.data.synced} new readings`);
+        refetch();
+      } else {
+        toast.error(response.data.error || 'Sync failed');
+      }
+    } catch (error) {
+      toast.error('Failed to sync data');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (!cgmConnected) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-12 text-center">
+              <Activity className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">No CGM Connected</h2>
+              <p className="text-slate-500 mb-6">
+                Connect your Freestyle Libre or Dexcom device to see real-time glucose monitoring
+              </p>
+              <Button onClick={() => window.location.href = '/Profile'}>
+                Connect CGM Device
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">CGM Dashboard</h1>
+            <p className="text-sm text-slate-500">Real-time glucose monitoring</p>
+          </div>
+          <Button onClick={handleSync} disabled={syncing} variant="outline">
+            {syncing ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            Sync Now
+          </Button>
+        </div>
+
+        {/* Current Reading - Big Card */}
+        {latestReading && (
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-500">
+            <CardContent className="p-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                <div className="text-center sm:text-left">
+                  <p className="text-emerald-100 text-sm mb-2">Current Glucose</p>
+                  <div className="flex items-center justify-center sm:justify-start gap-4">
+                    <span className="text-6xl font-bold text-white">
+                      {latestReading.reading}
+                    </span>
+                    <div className="text-white">
+                      {getTrendIcon(latestReading.trend)}
+                      <p className="text-sm mt-1">{getTrendText(latestReading.trend)}</p>
+                    </div>
+                  </div>
+                  <p className="text-emerald-100 text-sm mt-2">
+                    Updated {moment(latestReading.created_date).fromNow()}
+                  </p>
+                </div>
+                <div className="flex sm:flex-col gap-4 sm:gap-3 justify-center">
+                  <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <p className="text-xs text-emerald-100">Target</p>
+                    <p className="text-lg font-bold text-white">{targetMin}-{targetMax}</p>
+                  </div>
+                  <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <p className="text-xs text-emerald-100">Average</p>
+                    <p className="text-lg font-bold text-white">{stats.average || '--'}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Time in Range Stats */}
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <CheckCircle className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-emerald-600">{stats.timeInRange}%</p>
+              <p className="text-xs text-slate-500">In Range</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <TrendingUp className="w-6 h-6 text-rose-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-rose-600">
+                {stats.total > 0 ? Math.round((stats.high / stats.total) * 100) : 0}%
+              </p>
+              <p className="text-xs text-slate-500">High</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <TrendingDown className="w-6 h-6 text-amber-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-amber-600">
+                {stats.total > 0 ? Math.round((stats.low / stats.total) * 100) : 0}%
+              </p>
+              <p className="text-xs text-slate-500">Low</p>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <Activity className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
+              <p className="text-xs text-slate-500">Readings</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="chart" className="space-y-6">
+          <TabsList className="bg-white shadow-sm">
+            <TabsTrigger value="chart">24h Chart</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="reminders">Reminders</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="chart">
+            {/* Glucose Chart */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">24-Hour Glucose Trend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartData.length === 0 ? (
+                  <div className="h-[350px] flex items-center justify-center text-slate-400">
+                    No readings in the last 24 hours
+                  </div>
+                ) : (
+                  <div className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="time" 
+                          tick={{ fontSize: 11, fill: '#94a3b8' }}
+                          interval={Math.floor(chartData.length / 12)}
+                        />
+                        <YAxis domain={[40, 300]} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                        <Tooltip />
+                        <ReferenceLine y={targetMin} stroke="#fbbf24" strokeDasharray="5 5" label={{ value: 'Low', fontSize: 10 }} />
+                        <ReferenceLine y={targetMax} stroke="#fbbf24" strokeDasharray="5 5" label={{ value: 'High', fontSize: 10 }} />
+                        <Area type="monotone" dataKey="glucose" fill="url(#glucoseGradient)" stroke="none" />
+                        <Line type="monotone" dataKey="glucose" stroke="#10b981" strokeWidth={2.5} dot={false} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Readings */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Recent Readings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {readings.slice(0, 10).map((reading) => (
+                    <div key={reading.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className={cn("text-xl font-bold", getGlucoseColor(reading.reading))}>
+                          {reading.reading}
+                        </span>
+                        <span className="text-sm text-slate-500">mg/dL</span>
+                        {getTrendIcon(reading.trend)}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-600">{moment(reading.created_date).format('h:mm A')}</p>
+                        <p className="text-xs text-slate-400">{moment(reading.created_date).fromNow()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="insights">
+            <div className="grid gap-6">
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Pattern Analysis</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-emerald-50 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-emerald-800">Good Control</h4>
+                        <p className="text-sm text-emerald-700 mt-1">
+                          You're spending {stats.timeInRange}% of time in target range. 
+                          Great job maintaining stable glucose levels!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {stats.high > stats.total * 0.25 && (
+                    <div className="p-4 bg-rose-50 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-rose-800">High Readings Alert</h4>
+                          <p className="text-sm text-rose-700 mt-1">
+                            {Math.round((stats.high / stats.total) * 100)}% of readings are above target. 
+                            Consider reviewing your meal plan and medication timing.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {stats.low > stats.total * 0.1 && (
+                    <div className="p-4 bg-amber-50 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-semibold text-amber-800">Low Readings Alert</h4>
+                          <p className="text-sm text-amber-700 mt-1">
+                            {Math.round((stats.low / stats.total) * 100)}% of readings are below target. 
+                            Keep fast-acting glucose nearby and adjust medication as needed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reminders">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-blue-500" />
+                  Push Notification Reminders
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-xl">
+                  <h4 className="font-semibold text-blue-800 mb-2">📱 Set Up Reminders</h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    To enable push notifications on your iOS device:
+                  </p>
+                  <ol className="list-decimal ml-4 space-y-2 text-sm text-blue-700">
+                    <li>Go to iOS Settings → GlucoGuide</li>
+                    <li>Enable "Allow Notifications"</li>
+                    <li>Enable "Time Sensitive Notifications" for critical alerts</li>
+                    <li>Return to the app to set your reminder schedule</li>
+                  </ol>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-4 bg-violet-50 rounded-xl">
+                    <h4 className="font-semibold text-violet-800 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Medication Reminders
+                    </h4>
+                    <p className="text-sm text-violet-700 mt-2">
+                      Set in Medications section. Get notified at your scheduled medication times.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => window.location.href = '/Medications'}>
+                      Configure Medications
+                    </Button>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 rounded-xl">
+                    <h4 className="font-semibold text-emerald-800 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Meal Reminders
+                    </h4>
+                    <p className="text-sm text-emerald-700 mt-2">
+                      Get reminders for scheduled meals based on your meal plan times.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => window.location.href = '/Meals'}>
+                      View Meal Plan
+                    </Button>
+                  </div>
+
+                  <div className="p-4 bg-orange-50 rounded-xl">
+                    <h4 className="font-semibold text-orange-800 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Exercise Reminders
+                    </h4>
+                    <p className="text-sm text-orange-700 mt-2">
+                      Get reminded when it's time for your scheduled workouts.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => window.location.href = '/Exercise'}>
+                      View Exercise Plan
+                    </Button>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-xl">
+                    <h4 className="font-semibold text-indigo-800 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Sleep Reminders
+                    </h4>
+                    <p className="text-sm text-indigo-700 mt-2">
+                      Get reminded at your target bedtime ({userProfile?.sleep_time || '22:00'}) to maintain healthy sleep.
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => window.location.href = '/Sleep'}>
+                      View Sleep Log
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-amber-50 rounded-xl">
+                  <h4 className="font-semibold text-amber-800">🚨 Critical Alerts</h4>
+                  <p className="text-sm text-amber-700 mt-2">
+                    When CGM detects glucose levels outside your target range, you'll receive 
+                    time-sensitive notifications to take immediate action.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

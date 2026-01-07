@@ -19,8 +19,8 @@ export default function Layout({ children }) {
 
   const navItems = [
     { name: 'Home', icon: Home, path: createPageUrl('Home') },
+    { name: 'CGM', icon: Activity, path: createPageUrl('CGMDashboard') },
     { name: 'Meals', icon: Utensils, path: createPageUrl('Meals') },
-    { name: 'Glucose', icon: Activity, path: createPageUrl('Glucose') },
     { name: 'Meds', icon: Pill, path: createPageUrl('Medications') },
     { name: 'Exercise', icon: Dumbbell, path: createPageUrl('Exercise') },
     { name: 'Sleep', icon: Moon, path: createPageUrl('Sleep') },
