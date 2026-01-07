@@ -71,23 +71,45 @@ export default function LibreConnect({ onConnected }) {
             />
           </div>
 
-          <Button 
-            type="submit"
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
-            disabled={connecting}
-          >
-            {connecting ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <Link2 className="w-4 h-4 mr-2" />
-                Connect LibreLinkUp
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              type="submit"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              disabled={connecting}
+            >
+              {connecting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Connect
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-shrink-0"
+              onClick={async () => {
+                try {
+                  const response = await base44.functions.invoke('syncLibreData', {});
+                  if (response.data.success) {
+                    toast.success(`Synced ${response.data.synced} readings`);
+                  } else {
+                    toast.error(response.data.error || 'Sync failed');
+                  }
+                } catch (error) {
+                  toast.error('Failed to sync');
+                }
+              }}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Sync
+            </Button>
+          </div>
 
           <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
             <p className="font-medium mb-1">How to connect:</p>
