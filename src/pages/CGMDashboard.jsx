@@ -196,12 +196,34 @@ export default function CGMDashboard() {
         />
 
         {/* Current Reading - Big Card */}
-        {latestReading && (
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-500">
-            <CardContent className="p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                <div className="text-center sm:text-left">
-                <p className="text-emerald-100 text-sm mb-2">Current Glucose</p>
+        {latestReading && (() => {
+          const reading = latestReading.reading;
+          const isLow = reading < targetMin;
+          const isHigh = reading > targetMax;
+          const isCriticalLow = reading < targetMin - 20;
+          const isCriticalHigh = reading > targetMax + 50;
+          
+          let gradientClass, textClass;
+          if (isCriticalLow || isCriticalHigh) {
+            gradientClass = "from-rose-600 to-red-600";
+            textClass = "text-rose-100";
+          } else if (isLow) {
+            gradientClass = "from-amber-500 to-orange-500";
+            textClass = "text-amber-100";
+          } else if (isHigh) {
+            gradientClass = "from-orange-500 to-rose-500";
+            textClass = "text-orange-100";
+          } else {
+            gradientClass = "from-emerald-500 to-teal-500";
+            textClass = "text-emerald-100";
+          }
+          
+          return (
+            <Card className={`border-0 shadow-lg bg-gradient-to-br ${gradientClass}`}>
+              <CardContent className="p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                  <div className="text-center sm:text-left">
+                  <p className={`${textClass} text-sm mb-2`}>Current Glucose</p>
                 <div className="flex items-center justify-center sm:justify-start gap-4">
                   <div>
                     <span className="text-6xl font-bold text-white">
@@ -214,26 +236,27 @@ export default function CGMDashboard() {
                     <p className="text-sm mt-1">{getTrendText(latestReading.trend)}</p>
                   </div>
                 </div>
-                <p className="text-emerald-100 text-sm mt-2">
+                <p className={`${textClass} text-sm mt-2`}>
                   {moment(latestReading.date + ' ' + latestReading.reading_time).format('MMM D, h:mm A')}
                 </p>
                 </div>
                 <div className="flex sm:flex-col gap-4 sm:gap-3 justify-center">
                   <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <p className="text-xs text-emerald-100">Target</p>
+                    <p className={`text-xs ${textClass}`}>Target</p>
                     <p className="text-lg font-bold text-white">{targetMin}-{targetMax}</p>
-                    <p className="text-xs text-emerald-100">mg/dL</p>
+                    <p className={`text-xs ${textClass}`}>mg/dL</p>
                   </div>
                   <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <p className="text-xs text-emerald-100">24h Avg</p>
+                    <p className={`text-xs ${textClass}`}>24h Avg</p>
                     <p className="text-lg font-bold text-white">{stats.average || '--'}</p>
-                    <p className="text-xs text-emerald-100">mg/dL</p>
+                    <p className={`text-xs ${textClass}`}>mg/dL</p>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        )}
+          );
+        })()}
 
         {/* Time in Range Stats */}
         <div className="grid grid-cols-4 gap-4">
