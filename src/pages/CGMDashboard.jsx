@@ -61,10 +61,11 @@ export default function CGMDashboard() {
   const targetMax = userProfile?.target_glucose_max || 140;
   const cgmConnected = userProfile?.cgm_device && userProfile.cgm_device !== 'none';
 
-  // Filter last 24 hours
-  const last24h = readings.filter(r => 
-    moment(r.created_date).isAfter(moment().subtract(24, 'hours'))
-  );
+  // Filter last 24 hours based on actual reading time
+  const last24h = readings.filter(r => {
+    const readingTime = moment(r.date + ' ' + r.reading_time);
+    return readingTime.isAfter(moment().subtract(24, 'hours'));
+  });
 
   // Latest reading
   const latestReading = readings[0];
