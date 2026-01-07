@@ -280,10 +280,20 @@ export default function Profile() {
                   <Button 
                     variant="destructive"
                     className="w-full sm:w-auto"
-                    onClick={() => {
+                    onClick={async () => {
                       if (confirm('Are you absolutely sure? This action cannot be undone. All your health data will be permanently deleted.')) {
                         if (confirm('Final confirmation: Delete your account and all data?')) {
-                          toast.error('Account deletion is not yet implemented. Please contact support to delete your account.');
+                          try {
+                            const response = await base44.functions.invoke('deleteAccount', {});
+                            if (response.data.success) {
+                              toast.success('Account deleted successfully');
+                              setTimeout(() => {
+                                base44.auth.logout();
+                              }, 2000);
+                            }
+                          } catch (error) {
+                            toast.error(error.response?.data?.error || 'Failed to delete account');
+                          }
                         }
                       }
                     }}
