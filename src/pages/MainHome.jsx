@@ -73,8 +73,7 @@ export default function MainHome() {
             </h1>
             
             <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto">
-              Take control of your diabetes with personalized meal plans, smart glucose tracking, 
-              and AI-driven insights tailored to your unique health profile.
+              We believe that diabetes management is not one-size-fits-all. DiabetEasy uses advanced AI to understand your unique patterns and provide personalized recommendations that actually work for your body.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
@@ -193,7 +192,7 @@ export default function MainHome() {
             Ready to Take Control of Your Diabetes?
           </h2>
           <p className="text-xl text-emerald-100 mb-8">
-            Join thousands of people managing their diabetes smarter with DiabetEasy
+            Start your journey to better diabetes management with personalized AI-powered insights
           </p>
           <Button 
             size="lg" 
