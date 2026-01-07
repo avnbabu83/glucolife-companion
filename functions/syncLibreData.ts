@@ -20,47 +20,74 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Authenticate with LibreLinkUp
+    // Authenticate with LibreLinkUp - try multiple regional endpoints
     console.log('Authenticating with LibreLinkUp...');
-    const loginResponse = await fetch('https://api-us.libreview.io/llu/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Product': 'llu.android',
-        'Version': '4.7.0'
-      },
-      body: JSON.stringify({
-        email: profile.libre_email,
-        password: profile.libre_password
-      })
-    });
+    const endpoints = [
+      'https://api-us.libreview.io',
+      'https://api.libreview.io',
+      'https://api-eu.libreview.io'
+    ];
+    
+    let authData = null;
+    let token = null;
+    let userId = null;
+    let successEndpoint = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        const loginResponse = await fetch(`${endpoint}/llu/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Product': 'llu.android',
+            'Version': '4.7.0'
+          },
+          body: JSON.stringify({
+            email: profile.libre_email,
+            password: profile.libre_password
+          })
+        });
 
-    if (!loginResponse.ok) {
-      const errorText = await loginResponse.text();
-      return Response.json({ 
-        error: 'Failed to authenticate with LibreLinkUp. Please reconnect.',
-        details: errorText 
-      }, { status: 401 });
+        if (loginResponse.ok) {
+          authData = await loginResponse.json();
+          token = authData.data?.authTicket?.token || authData.authTicket?.token;
+          userId = authData.data?.user?.id || authData.user?.id;
+          successEndpoint = endpoint;
+          console.log(`Authenticated successfully with ${endpoint}`);
+          break;
+        }
+      } catch (err) {
+        continue;
+      }
     }
-
-    const authData = await loginResponse.json();
-    const token = authData.data?.authTicket?.token;
     
     if (!token) {
       return Response.json({ 
-        error: 'No auth token received from LibreLinkUp' 
-      }, { status: 500 });
+        error: 'Failed to authenticate with LibreLinkUp. Please reconnect.' 
+      }, { status: 401 });
+    }
+
+    // Generate Account-Id header (SHA-256 of user ID) if we have userId
+    let accountIdHeader = {};
+    if (userId) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(userId);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const accountId = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      accountIdHeader = { 'Account-Id': accountId };
     }
 
     // Fetch connections (patients)
     console.log('Fetching connections...');
-    const connectionsResponse = await fetch('https://api-us.libreview.io/llu/connections', {
+    const connectionsResponse = await fetch(`${successEndpoint}/llu/connections`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
         'Product': 'llu.android',
-        'Version': '4.7.0'
+        'Version': '4.7.0',
+        ...accountIdHeader
       }
     });
 
