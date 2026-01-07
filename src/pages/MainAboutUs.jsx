@@ -159,6 +159,14 @@ export default function MainAboutUs() {
         </div>
       </div>
 
+      {/* Creator Section */}
+      <div className="py-12 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <p className="text-slate-600 mb-2">Created by</p>
+          <h3 className="text-2xl font-bold text-slate-800">Naresh Babu Amperayani</h3>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="bg-slate-900 py-8">
         <div className="max-w-6xl mx-auto px-4 text-center text-slate-400">
