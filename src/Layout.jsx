@@ -99,13 +99,20 @@ export default function Layout({ children }) {
         <Link
           to={createPageUrl('Profile')}
           className={cn(
-            "flex flex-col items-center py-3 px-4 rounded-xl transition-all",
+            "flex flex-col items-center py-3 px-4 rounded-xl transition-all relative group",
             currentPath.includes('Profile')
               ? "bg-emerald-50 text-emerald-600" 
               : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
           )}
         >
-          <User className="w-5 h-5" />
+          <div className={cn(
+            "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+            currentPath.includes('Profile')
+              ? "bg-emerald-600 text-white ring-2 ring-emerald-200"
+              : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
+          )}>
+            <User className="w-5 h-5" />
+          </div>
           <span className="text-[10px] mt-1 font-medium">Profile</span>
         </Link>
       </nav>
