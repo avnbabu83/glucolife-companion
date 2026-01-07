@@ -123,8 +123,13 @@ Deno.serve(async (req) => {
       accountIdHeader = { 'Account-Id': accountId };
     }
 
+    // Make sure we have a valid endpoint
+    if (!successEndpoint) {
+      successEndpoint = 'https://api-ca.libreview.io'; // Default to detected region
+    }
+
     // Fetch connections (patients)
-    console.log('Fetching connections...');
+    console.log(`Fetching connections from ${successEndpoint}...`);
     const connectionsResponse = await fetch(`${successEndpoint}/llu/connections`, {
       headers: {
         'Authorization': `Bearer ${token}`,
