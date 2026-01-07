@@ -123,15 +123,46 @@ export default function Exercise() {
   };
 
   const [previewExercises, setPreviewExercises] = useState(null);
+  const [considerWeather, setConsiderWeather] = useState(false);
+  const [weatherData, setWeatherData] = useState(null);
 
   const generateExercisePlan = async () => {
     setGenerating(true);
     try {
+      let weatherInfo = '';
+      if (considerWeather) {
+        try {
+          const weather = await base44.integrations.Core.InvokeLLM({
+            prompt: `Get current weather for the user's location. Return temperature, conditions, and if it's suitable for outdoor exercise.`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                temperature: { type: "number" },
+                conditions: { type: "string" },
+                suitable_for_outdoor: { type: "boolean" },
+                recommendation: { type: "string" }
+              }
+            }
+          });
+          setWeatherData(weather);
+          weatherInfo = `\n\nCurrent Weather:
+          - Temperature: ${weather.temperature}°F
+          - Conditions: ${weather.conditions}
+          - Outdoor Exercise: ${weather.suitable_for_outdoor ? 'Suitable' : 'Not recommended'}
+          - Weather Note: ${weather.recommendation}
+          
+          ${weather.suitable_for_outdoor ? 'Prioritize outdoor exercises.' : 'Focus on indoor exercises.'}`;
+        } catch (error) {
+          console.error('Weather fetch failed:', error);
+        }
+      }
+
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Create a diabetes-friendly weekly exercise plan for someone with:
         - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
         - Activity Level: ${userProfile?.activity_level || 'moderately_active'}
-        - Age: ${userProfile?.age || 'adult'}
+        - Age: ${userProfile?.age || 'adult'}${weatherInfo}
         
         Provide 5-7 exercises suitable for diabetics, with variety across the week.
         Focus on low-impact exercises like walking, swimming, yoga, cycling, and stretching.
@@ -229,7 +260,7 @@ export default function Exercise() {
               ) : (
                 <Sparkles className="w-4 h-4 mr-2" />
               )}
-              AI Generate
+              Generate Plan
             </Button>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -403,16 +434,50 @@ export default function Exercise() {
           </div>
         </div>
 
+        {/* Weather Toggle */}
+        <Card className="border-0 shadow-sm bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-blue-800">Consider Local Weather</p>
+                <p className="text-sm text-blue-600">Get exercise recommendations based on current weather conditions</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={considerWeather}
+                  onChange={(e) => setConsiderWeather(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Preview Generated Exercises */}
         {previewExercises && (
           <Card className="border-2 border-violet-500 shadow-lg">
             <CardHeader className="bg-violet-50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-violet-600" />
-                AI-Generated Exercise Plan
+                Generated Exercise Plan
+                {weatherData && (
+                  <span className="text-xs font-normal text-violet-600 ml-auto">
+                    🌤️ Weather considered
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-6">
+              {weatherData && (
+                <div className="p-3 bg-blue-50 rounded-lg mb-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Current Weather:</strong> {weatherData.temperature}°F, {weatherData.conditions}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">{weatherData.recommendation}</p>
+                </div>
+              )}
               {previewExercises.map((ex, idx) => (
                 <div key={idx} className="p-4 bg-slate-50 rounded-xl">
                   <div className="flex items-start justify-between mb-2">

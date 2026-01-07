@@ -95,7 +95,7 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-emerald-600" />
-          AI Meal Plan Generator
+          Meal Plan Generator
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -148,7 +148,7 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
           <div className="mt-6 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-500">
             <h4 className="font-semibold text-emerald-800 mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
-              Preview: {selectedDays}-Day Meal Plan
+              {selectedDays}-Day Meal Plan Preview
             </h4>
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {previewMeals.map((day, dayIdx) => (
