@@ -65,7 +65,7 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
         {currentDevice && currentDevice !== 'none' ? (
           <div className="space-y-4">
             <div className="p-4 bg-emerald-50 rounded-xl">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600" />
                   <div>
@@ -77,27 +77,28 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {(currentDevice === 'libre2' || currentDevice === 'libre3') && libreConnected && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={handleSyncNow}
                       disabled={syncing}
+                      className="flex-shrink-0"
                     >
                       {syncing ? (
                         <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
                       ) : (
                         <RefreshCw className="w-4 h-4 mr-1" />
                       )}
-                      Sync Now
+                      Sync
                     </Button>
                   )}
                   <Button 
                     size="sm" 
                     variant="outline" 
                     onClick={handleDisconnect}
-                    className="text-rose-600 hover:bg-rose-50"
+                    className="text-rose-600 hover:bg-rose-50 flex-shrink-0"
                   >
                     <Unlink className="w-4 h-4 mr-1" />
                     Disconnect

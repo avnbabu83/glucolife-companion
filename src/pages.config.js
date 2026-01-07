@@ -3,9 +3,9 @@ import Glucose from './pages/Glucose';
 import Home from './pages/Home';
 import Meals from './pages/Meals';
 import Medications from './pages/Medications';
+import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
-import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -15,9 +15,9 @@ export const PAGES = {
     "Home": Home,
     "Meals": Meals,
     "Medications": Medications,
+    "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
-    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {

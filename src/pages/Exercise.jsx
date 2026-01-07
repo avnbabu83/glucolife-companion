@@ -187,9 +187,9 @@ export default function Exercise() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline"
               onClick={() => setShowHealthDialog(true)}
@@ -296,14 +296,14 @@ export default function Exercise() {
                   
                   <div>
                     <Label>Scheduled Days</Label>
-                    <div className="flex gap-2 mt-2">
+                    <div className="grid grid-cols-7 gap-1.5 mt-2">
                       {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                         <button
                           key={day}
                           type="button"
                           onClick={() => toggleDay(day)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                            "px-2 py-1.5 rounded-lg text-xs font-medium transition-colors",
                             newExercise.scheduled_days.includes(day)
                               ? "bg-violet-600 text-white"
                               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
