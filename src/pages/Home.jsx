@@ -24,6 +24,9 @@ import GlucoseChart from '@/components/dashboard/GlucoseChart';
 import AIRecommendations from '@/components/insights/AIRecommendations';
 import QuickFoodLog from '@/components/logging/QuickFoodLog';
 import QuickWorkoutLog from '@/components/logging/QuickWorkoutLog';
+import NutritionComparison from '@/components/insights/NutritionComparison';
+import GlucoseTrendAnalysis from '@/components/insights/GlucoseTrendAnalysis';
+import LifestyleRoutineAnalyzer from '@/components/insights/LifestyleRoutineAnalyzer';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -230,7 +233,11 @@ export default function Home() {
               targetMin={userProfile?.target_glucose_min || 70}
               targetMax={userProfile?.target_glucose_max || 140}
             />
-            
+
+            <NutritionComparison dateRange={7} />
+
+            <GlucoseTrendAnalysis daysToAnalyze={14} />
+
             <UpcomingReminders 
               meals={todayMeals.filter(m => !m.is_completed)}
               medications={medications}
@@ -240,12 +247,14 @@ export default function Home() {
 
           {/* Right Column */}
           <div className="space-y-6">
+            <LifestyleRoutineAnalyzer />
+
             <AIRecommendations 
               glucoseReadings={todayGlucose}
               mealHistory={todayMeals}
               userProfile={userProfile}
             />
-            
+
             {/* Sleep Summary */}
             {sleepLogs[0] && (
               <div className="p-4 bg-indigo-50 rounded-xl">

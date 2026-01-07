@@ -3,13 +3,13 @@ import Exercise from './pages/Exercise';
 import Glucose from './pages/Glucose';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
+import MainAboutUs from './pages/MainAboutUs';
+import MainHome from './pages/MainHome';
 import Meals from './pages/Meals';
 import Medications from './pages/Medications';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
-import MainHome from './pages/MainHome';
-import MainAboutUs from './pages/MainAboutUs';
 import __Layout from './Layout.jsx';
 
 
@@ -19,13 +19,13 @@ export const PAGES = {
     "Glucose": Glucose,
     "Home": Home,
     "Landing": Landing,
+    "MainAboutUs": MainAboutUs,
+    "MainHome": MainHome,
     "Meals": Meals,
     "Medications": Medications,
     "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
-    "MainHome": MainHome,
-    "MainAboutUs": MainAboutUs,
 }
 
 export const pagesConfig = {

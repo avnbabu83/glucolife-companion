@@ -140,7 +140,9 @@ export default function GlucoseActionCard({ reading, trend, targetMin, targetMax
 
   const severityStyles = {
     critical: 'bg-gradient-to-r from-rose-500 to-red-500 text-white',
-    warning: `bg-gradient-to-r from-${action.color}-400 to-${action.color}-500 text-white`,
+    warning: action.color === 'amber' 
+      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white'
+      : 'bg-gradient-to-r from-rose-400 to-rose-500 text-white',
     info: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
   };
 

@@ -229,12 +229,55 @@ export default function Exercise() {
                 <div className="space-y-4">
                   <div>
                     <Label>Exercise Name *</Label>
-                    <Input
-                      value={newExercise.name}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Morning Walk"
-                      className="mt-1"
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={newExercise.name}
+                        onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., 30 min brisk walk or gym session"
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={async () => {
+                          if (!newExercise.name.trim()) return;
+                          setGenerating(true);
+                          try {
+                            const result = await base44.integrations.Core.InvokeLLM({
+                              prompt: `Analyze this workout description and provide realistic estimates: "${newExercise.name}"`,
+                              response_json_schema: {
+                                type: "object",
+                                properties: {
+                                  exercise_type: { type: "string" },
+                                  duration_minutes: { type: "number" },
+                                  calories_burned: { type: "number" },
+                                  intensity: { type: "string" }
+                                }
+                              }
+                            });
+                            setNewExercise(prev => ({
+                              ...prev,
+                              exercise_type: result.exercise_type || prev.exercise_type,
+                              duration_minutes: result.duration_minutes || prev.duration_minutes,
+                              calories_burned: result.calories_burned || prev.calories_burned,
+                              intensity: result.intensity || prev.intensity
+                            }));
+                          } catch (error) {
+                            console.error('AI generation failed:', error);
+                          } finally {
+                            setGenerating(false);
+                          }
+                        }}
+                        disabled={generating || !newExercise.name.trim()}
+                      >
+                        {generating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Click ✨ to auto-generate workout details</p>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
