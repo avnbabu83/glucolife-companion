@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import CGMIntegration from '@/components/cgm/CGMIntegration';
+import WearableIntegration from '@/components/wearables/WearableIntegration';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -74,6 +75,15 @@ export default function Profile() {
     }
   };
 
+  const handleWearableChange = (device) => {
+    if (profiles.length > 0) {
+      updateProfileMutation.mutate({ 
+        id: profiles[0].id, 
+        data: { wearable_device: device } 
+      });
+    }
+  };
+
   const handleLogout = () => {
     base44.auth.logout();
   };
@@ -124,6 +134,10 @@ export default function Profile() {
               <Activity className="w-4 h-4 mr-2" />
               CGM
             </TabsTrigger>
+            <TabsTrigger value="wearables">
+              <Shield className="w-4 h-4 mr-2" />
+              Wearables
+            </TabsTrigger>
             <TabsTrigger value="notifications">
               <Bell className="w-4 h-4 mr-2" />
               Reminders
@@ -153,6 +167,19 @@ export default function Profile() {
               latestReadings={glucoseReadings}
               libreConnected={!!profile?.libre_sharing_code}
               onLibreConnected={() => queryClient.invalidateQueries({ queryKey: ['userProfile'] })}
+            />
+          </TabsContent>
+
+          <TabsContent value="wearables">
+            <WearableIntegration 
+              connectedDevice={profile?.wearable_device}
+              onDeviceChange={handleWearableChange}
+              latestData={{
+                sleep_hours: profile?.last_sleep_hours,
+                heart_rate: profile?.last_heart_rate,
+                steps: profile?.last_steps,
+                calories: profile?.last_calories
+              }}
             />
           </TabsContent>
 
