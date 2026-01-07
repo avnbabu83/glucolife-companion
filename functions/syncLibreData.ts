@@ -106,6 +106,14 @@ Deno.serve(async (req) => {
       }
     }
     
+    // Use stored token if no fresh auth
+    if (!token && profile.libre_auth_token) {
+      console.log('Using stored auth token from profile');
+      token = profile.libre_auth_token;
+      userId = profile.libre_user_id;
+      successEndpoint = 'https://api-ca.libreview.io';
+    }
+    
     if (!token) {
       return Response.json({ 
         error: 'Failed to authenticate with LibreLinkUp. Please reconnect.' 
