@@ -131,26 +131,26 @@ export default function Profile() {
         )}
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="bg-white shadow-sm">
-            <TabsTrigger value="profile">
-              <User className="w-4 h-4 mr-2" />
-              Profile
+          <TabsList className="bg-white shadow-sm grid grid-cols-5 w-full">
+            <TabsTrigger value="profile" className="text-xs px-2">
+              <User className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="cgm">
-              <Activity className="w-4 h-4 mr-2" />
-              CGM
+            <TabsTrigger value="cgm" className="text-xs px-2">
+              <Activity className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">CGM</span>
             </TabsTrigger>
-            <TabsTrigger value="wearables">
-              <Shield className="w-4 h-4 mr-2" />
-              Wearables
+            <TabsTrigger value="wearables" className="text-xs px-2">
+              <Shield className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Wearables</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications">
-              <Bell className="w-4 h-4 mr-2" />
-              Reminders
+            <TabsTrigger value="notifications" className="text-xs px-2">
+              <Bell className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reminders</span>
             </TabsTrigger>
-            <TabsTrigger value="account">
-              <Settings className="w-4 h-4 mr-2" />
-              Account
+            <TabsTrigger value="account" className="text-xs px-2">
+              <Settings className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Account</span>
             </TabsTrigger>
           </TabsList>
 

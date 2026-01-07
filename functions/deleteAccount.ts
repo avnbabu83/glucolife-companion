@@ -35,11 +35,8 @@ Deno.serve(async (req) => {
       ...activityData.map(a => base44.entities.ActivityData.delete(a.id))
     ]);
 
-    // Delete the user account
-    const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-    if (users.length > 0) {
-      await base44.asServiceRole.entities.User.delete(users[0].id);
-    }
+    // Delete the user account using service role
+    await base44.asServiceRole.entities.User.delete(user.id);
 
     return Response.json({
       success: true,

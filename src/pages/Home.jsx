@@ -35,11 +35,15 @@ export default function Home() {
 
   useEffect(() => {
     const loadUser = async () => {
+      const isAuthenticated = await base44.auth.isAuthenticated();
+      if (!isAuthenticated) {
+        navigate(createPageUrl('Landing'));
+        return;
+      }
       try {
         const userData = await base44.auth.me();
         setUser(userData);
       } catch (error) {
-        // User not authenticated, redirect to landing
         navigate(createPageUrl('Landing'));
       }
     };
