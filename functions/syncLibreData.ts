@@ -9,15 +9,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clientId = Deno.env.get('LIBRE_CLIENT_ID');
-    const clientSecret = Deno.env.get('LIBRE_CLIENT_SECRET');
-
-    if (!clientId || !clientSecret) {
-      return Response.json({ 
-        error: 'LibreView API credentials not configured. Please set LIBRE_CLIENT_ID and LIBRE_CLIENT_SECRET in dashboard settings.' 
-      }, { status: 500 });
-    }
-
     // Get user's profile to check if they have stored their Libre sharing code
     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
     const profile = profiles[0];
