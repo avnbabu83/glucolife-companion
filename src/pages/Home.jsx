@@ -35,11 +35,16 @@ export default function Home() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const userData = await base44.auth.me();
-      setUser(userData);
+      try {
+        const userData = await base44.auth.me();
+        setUser(userData);
+      } catch (error) {
+        // User not authenticated, redirect to landing
+        navigate(createPageUrl('Landing'));
+      }
     };
     loadUser();
-  }, []);
+  }, [navigate]);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile'],
