@@ -122,6 +122,8 @@ export default function Exercise() {
     });
   };
 
+  const [previewExercises, setPreviewExercises] = useState(null);
+
   const generateExercisePlan = async () => {
     setGenerating(true);
     try {
@@ -132,8 +134,10 @@ export default function Exercise() {
         - Age: ${userProfile?.age || 'adult'}
         
         Provide 5-7 exercises suitable for diabetics, with variety across the week.
+        Focus on low-impact exercises like walking, swimming, yoga, cycling, and stretching.
         Include precautions for blood sugar management during exercise.
-        Consider exercises that help with insulin sensitivity.`,
+        Consider exercises that help with insulin sensitivity.
+        Make exercises realistic and easy to follow.`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -143,9 +147,9 @@ export default function Exercise() {
                 type: "object",
                 properties: {
                   name: { type: "string" },
-                  exercise_type: { type: "string" },
+                  exercise_type: { type: "string", enum: ["walking", "jogging", "cycling", "swimming", "yoga", "pilates", "strength_training", "stretching", "other"] },
                   duration_minutes: { type: "number" },
-                  intensity: { type: "string" },
+                  intensity: { type: "string", enum: ["low", "moderate", "high"] },
                   scheduled_days: { type: "array", items: { type: "string" } },
                   scheduled_time: { type: "string" },
                   calories_burned: { type: "number" },
@@ -158,17 +162,29 @@ export default function Exercise() {
       });
 
       if (result.exercises) {
-        const exercisesToCreate = result.exercises.map(e => ({
-          ...e,
-          is_active: true
-        }));
-        bulkCreateExercisesMutation.mutate(exercisesToCreate);
+        setPreviewExercises(result.exercises);
       }
     } catch (error) {
       console.error('Error generating exercise plan:', error);
     } finally {
       setGenerating(false);
     }
+  };
+
+  const acceptExercises = async () => {
+    if (!previewExercises) return;
+    // Delete existing exercises
+    const existingIds = exercises.map(e => e.id);
+    for (const id of existingIds) {
+      await base44.entities.ExercisePlan.delete(id);
+    }
+    // Create new exercises
+    const exercisesToCreate = previewExercises.map(e => ({
+      ...e,
+      is_active: true
+    }));
+    bulkCreateExercisesMutation.mutate(exercisesToCreate);
+    setPreviewExercises(null);
   };
 
   const toggleDay = (day) => {
@@ -386,6 +402,44 @@ export default function Exercise() {
             </Dialog>
           </div>
         </div>
+
+        {/* Preview Generated Exercises */}
+        {previewExercises && (
+          <Card className="border-2 border-violet-500 shadow-lg">
+            <CardHeader className="bg-violet-50">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-violet-600" />
+                AI-Generated Exercise Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-6">
+              {previewExercises.map((ex, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 rounded-xl">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-slate-800">{ex.name}</p>
+                      <p className="text-sm text-slate-600 capitalize">{ex.exercise_type} • {ex.duration_minutes} min • {ex.intensity}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-2">Days: {ex.scheduled_days?.join(', ')}</p>
+                  <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ {ex.precautions}</p>
+                </div>
+              ))}
+              <div className="flex gap-3 pt-4">
+                <Button onClick={acceptExercises} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                  Accept & Replace All
+                </Button>
+                <Button onClick={generateExercisePlan} variant="outline" className="flex-1" disabled={generating}>
+                  {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                  Generate New
+                </Button>
+                <Button onClick={() => setPreviewExercises(null)} variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="today" className="space-y-6">
           <TabsList className="bg-white shadow-sm">

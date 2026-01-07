@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,12 +15,31 @@ export default function LifestyleRoutineAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
 
+  const { data: profile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: () => base44.entities.UserProfile.list(),
+  });
+
+  const userProfile = profile?.[0];
+
+  // Load saved routine on mount
+  React.useEffect(() => {
+    if (userProfile?.daily_routine) {
+      setRoutine(userProfile.daily_routine);
+    }
+  }, [userProfile]);
+
   const exampleRoutine = `I wake up around 5:30 and catch a train to work by 6:45, so no exercise and no breakfast. I walk for 1 km to work from train station and I do a desk job with minimal walking or in office walking from desk to desk or meeting rooms. Around lunch I usually have a subway veggie salad and walk 10 mins each way from office to subway. 1km walk to station in the evening and 2km walk home from station and potentially gym/tennis 2-3 times a week on weekends or evening.`;
 
   const analyzeRoutine = async () => {
     if (!routine.trim()) {
       toast.error('Please describe your daily routine');
       return;
+    }
+
+    // Save routine to profile
+    if (userProfile) {
+      await base44.entities.UserProfile.update(userProfile.id, { daily_routine: routine });
     }
 
     setAnalyzing(true);
