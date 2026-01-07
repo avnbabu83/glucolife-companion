@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import ExerciseCard from '@/components/exercise/ExerciseCard';
+import WearableIntegration from '@/components/wearables/WearableIntegration';
 
 export default function Exercise() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -87,6 +88,11 @@ export default function Exercise() {
   const bulkCreateExercisesMutation = useMutation({
     mutationFn: (data) => base44.entities.ExercisePlan.bulkCreate(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.UserProfile.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
   });
 
   const resetForm = () => {
@@ -342,24 +348,25 @@ export default function Exercise() {
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="week">Weekly Plan</TabsTrigger>
+            <TabsTrigger value="wearables">Wearables</TabsTrigger>
           </TabsList>
 
           <TabsContent value="wearables">
             <WearableIntegration 
-              connectedDevice={profile?.wearable_device}
+              connectedDevice={userProfile?.wearable_device}
               onDeviceChange={(device) => {
-                if (profile) {
+                if (userProfile) {
                   updateProfileMutation.mutate({ 
-                    id: profile.id, 
+                    id: userProfile.id, 
                     data: { wearable_device: device } 
                   });
                 }
               }}
               latestData={{
-                sleep_hours: profile?.last_sleep_hours,
-                heart_rate: profile?.last_heart_rate,
-                steps: profile?.last_steps,
-                calories: profile?.last_calories
+                sleep_hours: userProfile?.last_sleep_hours,
+                heart_rate: userProfile?.last_heart_rate,
+                steps: userProfile?.last_steps,
+                calories: userProfile?.last_calories
               }}
             />
           </TabsContent>
