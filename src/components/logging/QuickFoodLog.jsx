@@ -47,16 +47,16 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
     const now = moment().format('HH:mm');
     
     if (followedPlan && selectedMealId) {
-      // Mark the existing meal as completed
+      // Update existing meal to mark as completed
       const meal = todayMeals.find(m => m.id === selectedMealId);
       onSubmit({
-        ...meal,
-        is_completed: true,
+        id: meal.id,
         meal_name: foodName,
-        carbs: parseInt(carbs) || meal.carbs,
-        protein: parseInt(protein) || meal.protein,
-        calories: parseInt(calories) || meal.calories,
-        notes: notes || meal.notes
+        carbs: parseInt(carbs) || meal.carbs || 0,
+        protein: parseInt(protein) || meal.protein || 0,
+        calories: parseInt(calories) || meal.calories || 0,
+        notes: notes || meal.notes || '',
+        is_completed: true
       });
     } else {
       // Create new meal entry

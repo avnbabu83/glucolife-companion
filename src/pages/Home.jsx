@@ -15,11 +15,15 @@ import {
   ArrowRight,
   Plus
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 import QuickStats from '@/components/dashboard/QuickStats';
 import UpcomingReminders from '@/components/dashboard/UpcomingReminders';
 import GlucoseChart from '@/components/dashboard/GlucoseChart';
 import AIRecommendations from '@/components/insights/AIRecommendations';
+import QuickFoodLog from '@/components/logging/QuickFoodLog';
+import QuickWorkoutLog from '@/components/logging/QuickWorkoutLog';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -79,6 +83,15 @@ export default function Home() {
     queryFn: () => base44.entities.SleepLog.list('-date', 1),
   });
 
+  const updateMealMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.MealPlan.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
+      toast.success('Food logged successfully!');
+      setShowFoodLog(false);
+    },
+  });
+
   const createMealMutation = useMutation({
     mutationFn: (data) => base44.entities.MealPlan.create(data),
     onSuccess: () => {
@@ -96,6 +109,16 @@ export default function Home() {
       setShowWorkoutLog(false);
     },
   });
+
+  const handleFoodSubmit = (data) => {
+    if (data.id) {
+      // Update existing meal
+      updateMealMutation.mutate({ id: data.id, data });
+    } else {
+      // Create new meal
+      createMealMutation.mutate(data);
+    }
+  };
 
   const userProfile = profile?.[0];
   
@@ -237,7 +260,7 @@ export default function Home() {
               <DialogTitle>Log Food</DialogTitle>
             </DialogHeader>
             <QuickFoodLog 
-              onSubmit={(data) => createMealMutation.mutate(data)}
+              onSubmit={handleFoodSubmit}
               todayMeals={todayMeals}
             />
           </DialogContent>
