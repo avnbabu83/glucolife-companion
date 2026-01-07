@@ -23,6 +23,8 @@ import AIRecommendations from '@/components/insights/AIRecommendations';
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [showFoodLog, setShowFoodLog] = useState(false);
+  const [showWorkoutLog, setShowWorkoutLog] = useState(false);
   const queryClient = useQueryClient();
   const today = moment().format('YYYY-MM-DD');
   const navigate = useNavigate();
@@ -77,6 +79,24 @@ export default function Home() {
     queryFn: () => base44.entities.SleepLog.list('-date', 1),
   });
 
+  const createMealMutation = useMutation({
+    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
+      toast.success('Food logged successfully!');
+      setShowFoodLog(false);
+    },
+  });
+
+  const createExerciseMutation = useMutation({
+    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
+      toast.success('Workout logged successfully!');
+      setShowWorkoutLog(false);
+    },
+  });
+
   const userProfile = profile?.[0];
   
   // Show loading while checking profile
@@ -128,14 +148,14 @@ export default function Home() {
         {/* Quick Log Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button 
-            onClick={() => navigate(createPageUrl('Meals'))}
+            onClick={() => setShowFoodLog(true)}
             className="h-auto py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 flex items-center justify-center gap-2"
           >
             <Utensils className="w-5 h-5" />
             <span className="font-semibold">Log Food</span>
           </Button>
           <Button 
-            onClick={() => navigate(createPageUrl('Exercise'))}
+            onClick={() => setShowWorkoutLog(true)}
             className="h-auto py-4 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 flex items-center justify-center gap-2"
           >
             <Dumbbell className="w-5 h-5" />
@@ -209,6 +229,28 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Quick Log Dialogs */}
+        <Dialog open={showFoodLog} onOpenChange={setShowFoodLog}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Log Food</DialogTitle>
+            </DialogHeader>
+            <QuickFoodLog 
+              onSubmit={(data) => createMealMutation.mutate(data)}
+              todayMeals={todayMeals}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showWorkoutLog} onOpenChange={setShowWorkoutLog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Log Workout</DialogTitle>
+            </DialogHeader>
+            <QuickWorkoutLog onSubmit={(data) => createExerciseMutation.mutate(data)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
