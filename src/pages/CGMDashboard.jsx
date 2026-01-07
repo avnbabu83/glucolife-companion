@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import GlucoseActionCard from '../components/cgm/GlucoseActionCard';
+import QuickFoodLog from '../components/logging/QuickFoodLog';
+import QuickWorkoutLog from '../components/logging/QuickWorkoutLog';
 
 export default function CGMDashboard() {
   const [syncing, setSyncing] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
@@ -35,6 +38,22 @@ export default function CGMDashboard() {
   const { data: readings = [], refetch } = useQuery({
     queryKey: ['allGlucoseReadings'],
     queryFn: () => base44.entities.GlucoseReading.list('-created_date', 288), // 24h of readings every 5min
+  });
+
+  const createMealMutation = useMutation({
+    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      toast.success('Food logged');
+    },
+  });
+
+  const createExerciseMutation = useMutation({
+    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
+      toast.success('Workout logged');
+    },
   });
 
   const userProfile = profile?.[0];
@@ -256,6 +275,7 @@ export default function CGMDashboard() {
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="chart">24h Chart</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="log">Quick Log</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
           </TabsList>
 
@@ -322,6 +342,21 @@ export default function CGMDashboard() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="log">
+            <div className="grid md:grid-cols-2 gap-6">
+              <QuickFoodLog onSubmit={(data) => createMealMutation.mutate(data)} />
+              <QuickWorkoutLog onSubmit={(data) => createExerciseMutation.mutate(data)} />
+            </div>
+            <Card className="border-0 shadow-sm mt-6 bg-blue-50">
+              <CardContent className="p-4">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Tip:</strong> Log your food and exercise to see how they affect your glucose levels. 
+                  The AI will analyze patterns and provide personalized recommendations.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
