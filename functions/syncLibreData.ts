@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Product': 'llu.android',
-            'Version': '4.16.0'
+            'Version': '4.17.0'
           },
           body: JSON.stringify({
             email: profile.libre_email,
