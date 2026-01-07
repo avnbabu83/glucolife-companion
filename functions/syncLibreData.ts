@@ -249,8 +249,10 @@ Deno.serve(async (req) => {
         console.log(`Converted ${reading.value || reading.Value} mmol/L to ${glucoseValue} mg/dL`);
       }
 
-      const date = timestamp.toISOString().split('T')[0];
-      const time = timestamp.toTimeString().split(' ')[0].substring(0, 5);
+      // Use ISO string and extract date/time components to preserve timezone
+      const isoString = timestamp.toISOString();
+      const date = isoString.split('T')[0];
+      const time = isoString.split('T')[1].substring(0, 5);
       const key = `${date}_${time}`;
 
       // Skip if already exists
