@@ -20,8 +20,21 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Authenticate with LibreLinkUp - try multiple regional endpoints
+    // Authenticate with LibreLinkUp - handle regional redirects
     console.log('Authenticating with LibreLinkUp...');
+    
+    const regionMap = {
+      'us': 'https://api-us.libreview.io',
+      'eu': 'https://api-eu.libreview.io',
+      'de': 'https://api-de.libreview.io',
+      'fr': 'https://api-fr.libreview.io',
+      'jp': 'https://api-jp.libreview.io',
+      'ap': 'https://api-ap.libreview.io',
+      'au': 'https://api-au.libreview.io',
+      'ca': 'https://api-ca.libreview.io',
+      'global': 'https://api.libreview.io'
+    };
+    
     const endpoints = [
       'https://api-us.libreview.io',
       'https://api.libreview.io',
@@ -51,11 +64,42 @@ Deno.serve(async (req) => {
 
         if (loginResponse.ok) {
           authData = await loginResponse.json();
+          
+          // Check if we need to redirect to a specific region
+          if (authData.data?.redirect && authData.data?.region) {
+            const regionEndpoint = regionMap[authData.data.region];
+            if (regionEndpoint) {
+              console.log(`Redirecting to region: ${authData.data.region}`);
+              const redirectResponse = await fetch(`${regionEndpoint}/llu/auth/login`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'Product': 'llu.android',
+                  'Version': '4.7.0'
+                },
+                body: JSON.stringify({
+                  email: profile.libre_email,
+                  password: profile.libre_password
+                })
+              });
+              
+              if (redirectResponse.ok) {
+                authData = await redirectResponse.json();
+                successEndpoint = regionEndpoint;
+              }
+            }
+          } else {
+            successEndpoint = endpoint;
+          }
+          
           token = authData.data?.authTicket?.token || authData.authTicket?.token;
           userId = authData.data?.user?.id || authData.user?.id;
-          successEndpoint = endpoint;
-          console.log(`Authenticated successfully with ${endpoint}`);
-          break;
+          
+          if (token) {
+            console.log(`Authenticated successfully with ${successEndpoint}`);
+            break;
+          }
         }
       } catch (err) {
         continue;
