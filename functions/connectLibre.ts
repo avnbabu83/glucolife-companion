@@ -39,10 +39,19 @@ Deno.serve(async (req) => {
     }
 
     const authData = await loginResponse.json();
+    console.log('LibreLinkUp auth response:', JSON.stringify(authData, null, 2));
     
-    if (!authData.data?.authTicket?.token) {
+    // Try multiple possible token locations
+    const token = authData.data?.authTicket?.token || 
+                  authData.authTicket?.token || 
+                  authData.ticket?.token ||
+                  authData.token;
+    
+    if (!token) {
       return Response.json({ 
-        error: 'No auth token received from LibreLinkUp' 
+        error: 'No auth token received from LibreLinkUp',
+        responseStructure: Object.keys(authData),
+        dataKeys: authData.data ? Object.keys(authData.data) : null
       }, { status: 500 });
     }
 
@@ -53,7 +62,7 @@ Deno.serve(async (req) => {
       await base44.entities.UserProfile.update(profiles[0].id, {
         libre_email: email,
         libre_password: password, // Store encrypted
-        libre_auth_token: authData.data.authTicket.token,
+        libre_auth_token: token,
         libre_connected_at: new Date().toISOString(),
         cgm_device: 'libre2'
       });
