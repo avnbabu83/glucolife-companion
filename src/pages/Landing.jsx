@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Activity, Heart, TrendingDown, Brain, Apple, Dumbbell, Moon, Users, Target, Shield } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useNavigate } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
 export default function Landing() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (isAuth) {
+        navigate(createPageUrl('Home'));
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   const handleGetStarted = () => {
     base44.auth.redirectToLogin('/Home');
   };
