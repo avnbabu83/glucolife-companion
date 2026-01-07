@@ -65,11 +65,11 @@ export default function CGMDashboard() {
       : 0
   };
 
-  // Chart data
+  // Chart data - use reading_time and date for accurate timestamps
   const chartData = last24h
-    .sort((a, b) => moment(a.created_date).diff(moment(b.created_date)))
+    .sort((a, b) => moment(a.date + ' ' + a.reading_time).diff(moment(b.date + ' ' + b.reading_time)))
     .map(r => ({
-      time: moment(r.created_date).format('HH:mm'),
+      time: moment(r.date + ' ' + r.reading_time).format('HH:mm'),
       glucose: r.reading,
       trend: r.trend
     }));
@@ -129,7 +129,7 @@ export default function CGMDashboard() {
               <p className="text-slate-500 mb-6">
                 Connect your Freestyle Libre or Dexcom device to see real-time glucose monitoring
               </p>
-              <Button onClick={() => window.location.href = '/Profile'}>
+              <Button onClick={() => window.location.href = '/Profile?tab=cgm'}>
                 Connect CGM Device
               </Button>
             </CardContent>
@@ -164,28 +164,33 @@ export default function CGMDashboard() {
             <CardContent className="p-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                 <div className="text-center sm:text-left">
-                  <p className="text-emerald-100 text-sm mb-2">Current Glucose</p>
-                  <div className="flex items-center justify-center sm:justify-start gap-4">
+                <p className="text-emerald-100 text-sm mb-2">Current Glucose</p>
+                <div className="flex items-center justify-center sm:justify-start gap-4">
+                  <div>
                     <span className="text-6xl font-bold text-white">
                       {latestReading.reading}
                     </span>
-                    <div className="text-white">
-                      {getTrendIcon(latestReading.trend)}
-                      <p className="text-sm mt-1">{getTrendText(latestReading.trend)}</p>
-                    </div>
+                    <span className="text-2xl text-emerald-100 ml-2">mg/dL</span>
                   </div>
-                  <p className="text-emerald-100 text-sm mt-2">
-                    Updated {moment(latestReading.created_date).fromNow()}
-                  </p>
+                  <div className="text-white">
+                    {getTrendIcon(latestReading.trend)}
+                    <p className="text-sm mt-1">{getTrendText(latestReading.trend)}</p>
+                  </div>
+                </div>
+                <p className="text-emerald-100 text-sm mt-2">
+                  {moment(latestReading.date + ' ' + latestReading.reading_time).format('MMM D, h:mm A')}
+                </p>
                 </div>
                 <div className="flex sm:flex-col gap-4 sm:gap-3 justify-center">
                   <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
                     <p className="text-xs text-emerald-100">Target</p>
                     <p className="text-lg font-bold text-white">{targetMin}-{targetMax}</p>
+                    <p className="text-xs text-emerald-100">mg/dL</p>
                   </div>
                   <div className="text-center px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <p className="text-xs text-emerald-100">Average</p>
+                    <p className="text-xs text-emerald-100">24h Avg</p>
                     <p className="text-lg font-bold text-white">{stats.average || '--'}</p>
+                    <p className="text-xs text-emerald-100">mg/dL</p>
                   </div>
                 </div>
               </div>
@@ -293,8 +298,8 @@ export default function CGMDashboard() {
                         {getTrendIcon(reading.trend)}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-slate-600">{moment(reading.created_date).format('h:mm A')}</p>
-                        <p className="text-xs text-slate-400">{moment(reading.created_date).fromNow()}</p>
+                        <p className="text-sm text-slate-600">{moment(reading.date + ' ' + reading.reading_time).format('MMM D, h:mm A')}</p>
+                        <p className="text-xs text-slate-400">{moment(reading.date + ' ' + reading.reading_time).fromNow()}</p>
                       </div>
                     </div>
                   ))}

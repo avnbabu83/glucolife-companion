@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,13 @@ import CGMIntegration from '@/components/cgm/CGMIntegration';
 import WearableIntegration from '@/components/wearables/WearableIntegration';
 
 export default function Profile() {
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
+
+  // Get default tab from URL params
+  const urlParams = new URLSearchParams(location.search);
+  const defaultTab = urlParams.get('tab') || 'profile';
 
   useEffect(() => {
     const loadUser = async () => {
@@ -124,7 +130,7 @@ export default function Profile() {
           </Card>
         )}
 
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="profile">
               <User className="w-4 h-4 mr-2" />
