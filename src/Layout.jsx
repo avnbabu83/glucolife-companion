@@ -24,6 +24,7 @@ export default function Layout({ children }) {
     { name: 'Meds', icon: Pill, path: createPageUrl('Medications') },
     { name: 'Exercise', icon: Dumbbell, path: createPageUrl('Exercise') },
     { name: 'Sleep', icon: Moon, path: createPageUrl('Sleep') },
+    { name: 'Profile', icon: User, path: createPageUrl('Profile') },
   ];
 
   return (
