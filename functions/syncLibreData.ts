@@ -141,9 +141,13 @@ Deno.serve(async (req) => {
     });
 
     if (!connectionsResponse.ok) {
+      const errorText = await connectionsResponse.text();
+      console.error(`Failed to fetch connections (${connectionsResponse.status}):`, errorText);
       return Response.json({ 
         error: 'Failed to fetch connections',
-        status: connectionsResponse.status 
+        status: connectionsResponse.status,
+        details: errorText,
+        endpoint: successEndpoint
       }, { status: connectionsResponse.status });
     }
 
