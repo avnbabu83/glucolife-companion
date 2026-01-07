@@ -99,7 +99,7 @@ Provide comprehensive insights including patterns in glucose, sleep, activity, a
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-violet-600" />
-          AI Health Insights
+          Health Insights
         </CardTitle>
       </CardHeader>
       <CardContent>
