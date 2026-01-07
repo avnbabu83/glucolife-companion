@@ -2,10 +2,10 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Flame, Wheat, Drumstick, Droplets } from 'lucide-react';
+import { Check, Clock, Flame, Wheat, Drumstick, Droplets, Trash2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-export default function MealCard({ meal, onComplete, onViewDetails }) {
+export default function MealCard({ meal, onComplete, onViewDetails, onDelete }) {
   const mealTypeColors = {
     breakfast: 'bg-amber-50 text-amber-700 border-amber-200',
     morning_snack: 'bg-orange-50 text-orange-700 border-orange-200',
@@ -100,6 +100,21 @@ export default function MealCard({ meal, onComplete, onViewDetails }) {
           <Check className="w-4 h-4 mr-1" />
           {meal.is_completed ? 'Completed' : 'Mark Complete'}
         </Button>
+        {onDelete && (
+          <Button 
+            size="sm" 
+            variant="ghost"
+            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm('Delete this meal entry?')) {
+                onDelete(meal);
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </Card>
   );

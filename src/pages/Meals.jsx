@@ -41,6 +41,11 @@ export default function Meals() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meals'] }),
   });
 
+  const deleteMealMutation = useMutation({
+    mutationFn: (id) => base44.entities.MealPlan.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meals'] }),
+  });
+
   const createMealsMutation = useMutation({
     mutationFn: (meals) => base44.entities.MealPlan.bulkCreate(meals),
     onSuccess: () => {
@@ -189,6 +194,7 @@ export default function Meals() {
                 meal={meal}
                 onComplete={handleCompleteMeal}
                 onViewDetails={setSelectedMeal}
+                onDelete={(m) => deleteMealMutation.mutate(m.id)}
               />
             ))
           )}

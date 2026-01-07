@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Utensils, CheckCircle2 } from 'lucide-react';
+import { Utensils, CheckCircle2, Sparkles } from 'lucide-react';
 import moment from 'moment';
+import { toast } from "sonner";
 
 export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
   const [followedPlan, setFollowedPlan] = useState(false);
@@ -15,8 +17,11 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
   const [mealType, setMealType] = useState('lunch');
   const [carbs, setCarbs] = useState('');
   const [protein, setProtein] = useState('');
+  const [fat, setFat] = useState('');
+  const [fiber, setFiber] = useState('');
   const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
+  const [generating, setGenerating] = useState(false);
 
   // Get incomplete meals from today
   const incompleteMeals = todayMeals.filter(m => !m.is_completed);
@@ -29,6 +34,8 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
         setMealType(meal.meal_type);
         setCarbs(meal.carbs?.toString() || '');
         setProtein(meal.protein?.toString() || '');
+        setFat(meal.fat?.toString() || '');
+        setFiber(meal.fiber?.toString() || '');
         setCalories(meal.calories?.toString() || '');
         setNotes(meal.description || '');
       }
@@ -36,10 +43,50 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       setFoodName('');
       setCarbs('');
       setProtein('');
+      setFat('');
+      setFiber('');
       setCalories('');
       setNotes('');
     }
   }, [followedPlan, selectedMealId, todayMeals]);
+
+  const generateNutrition = async () => {
+    if (!foodName.trim()) {
+      toast.error('Please enter a food description first');
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze the following food and provide accurate nutritional information: "${foodName}"
+        
+        Provide realistic estimates for a typical serving size.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            calories: { type: "number" },
+            carbs: { type: "number" },
+            protein: { type: "number" },
+            fat: { type: "number" },
+            fiber: { type: "number" },
+            glycemic_index: { type: "string", enum: ["low", "medium", "high"] }
+          }
+        }
+      });
+
+      setCalories(result.calories?.toString() || '');
+      setCarbs(result.carbs?.toString() || '');
+      setProtein(result.protein?.toString() || '');
+      setFat(result.fat?.toString() || '');
+      setFiber(result.fiber?.toString() || '');
+      toast.success('Nutritional info generated!');
+    } catch (error) {
+      toast.error('Failed to generate nutrition info');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,6 +101,8 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
         meal_name: foodName,
         carbs: parseInt(carbs) || meal.carbs || 0,
         protein: parseInt(protein) || meal.protein || 0,
+        fat: parseInt(fat) || meal.fat || 0,
+        fiber: parseInt(fiber) || meal.fiber || 0,
         calories: parseInt(calories) || meal.calories || 0,
         notes: notes || meal.notes || '',
         is_completed: true
@@ -67,6 +116,8 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
         meal_name: foodName,
         carbs: parseInt(carbs) || 0,
         protein: parseInt(protein) || 0,
+        fat: parseInt(fat) || 0,
+        fiber: parseInt(fiber) || 0,
         calories: parseInt(calories) || 0,
         notes,
         is_completed: true
@@ -79,6 +130,8 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
     setMealType('lunch');
     setCarbs('');
     setProtein('');
+    setFat('');
+    setFiber('');
     setCalories('');
     setNotes('');
   };
@@ -129,13 +182,28 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label>What did you eat? *</Label>
-          <Input
-            value={foodName}
-            onChange={(e) => setFoodName(e.target.value)}
-            placeholder="e.g., Grilled chicken salad"
-            className="mt-1"
-            required
-          />
+          <div className="flex gap-2 mt-1">
+            <Input
+              value={foodName}
+              onChange={(e) => setFoodName(e.target.value)}
+              placeholder="e.g., half wheat bread toast with avocado spread"
+              className="flex-1"
+              required
+            />
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={generateNutrition}
+              disabled={generating || !foodName.trim()}
+            >
+              {generating ? (
+                <Sparkles className="w-4 h-4 animate-pulse" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Click ✨ to auto-generate nutrition info</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -175,6 +243,30 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
               type="number"
               value={protein}
               onChange={(e) => setProtein(e.target.value)}
+              placeholder="0"
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label>Fat (g)</Label>
+            <Input
+              type="number"
+              value={fat}
+              onChange={(e) => setFat(e.target.value)}
+              placeholder="0"
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Fiber (g)</Label>
+            <Input
+              type="number"
+              value={fiber}
+              onChange={(e) => setFiber(e.target.value)}
               placeholder="0"
               className="mt-1"
             />
