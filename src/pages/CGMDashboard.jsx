@@ -22,6 +22,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import GlucoseActionCard from '../components/cgm/GlucoseActionCard';
 
 export default function CGMDashboard() {
   const [syncing, setSyncing] = useState(false);
@@ -157,6 +158,14 @@ export default function CGMDashboard() {
             Sync Now
           </Button>
         </div>
+
+        {/* Action Recommendations */}
+        <GlucoseActionCard 
+          reading={latestReading?.reading}
+          trend={latestReading?.trend}
+          targetMin={targetMin}
+          targetMax={targetMax}
+        />
 
         {/* Current Reading - Big Card */}
         {latestReading && (
