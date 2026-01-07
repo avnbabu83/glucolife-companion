@@ -9,14 +9,14 @@ import { toast } from "sonner";
 
 export default function LibreConnect({ onConnected }) {
   const [connecting, setConnecting] = useState(false);
-  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [sharingCode, setSharingCode] = useState('');
 
   const handleConnect = async (e) => {
     e.preventDefault();
     setConnecting(true);
 
     try {
-      const response = await base44.functions.invoke('connectLibre', credentials);
+      const response = await base44.functions.invoke('connectLibre', { sharingCode });
       
       if (response.data.success) {
         toast.success('Successfully connected to LibreView!');
@@ -34,46 +34,41 @@ export default function LibreConnect({ onConnected }) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg">Connect LibreView Account</CardTitle>
+        <CardTitle className="text-lg">Connect LibreView Data Share</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleConnect} className="space-y-4">
           <div className="p-4 bg-blue-50 rounded-xl">
-            <p className="text-sm text-blue-700">
-              Enter your LibreView credentials to sync your Freestyle Libre glucose data automatically.
+            <p className="text-sm text-blue-700 mb-2">
+              <strong>Get your sharing code:</strong>
             </p>
+            <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
+              <li>Go to <a href="https://www.libreview.com/sharing" target="_blank" className="underline">libreview.com/sharing</a></li>
+              <li>Login with your LibreView account</li>
+              <li>Generate a data sharing code</li>
+              <li>Copy and paste it below</li>
+            </ol>
           </div>
 
           <div>
-            <Label htmlFor="libre-email">LibreView Email</Label>
+            <Label htmlFor="sharing-code">Data Sharing Code</Label>
             <Input
-              id="libre-email"
-              type="email"
-              value={credentials.email}
-              onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="your@email.com"
+              id="sharing-code"
+              type="text"
+              value={sharingCode}
+              onChange={(e) => setSharingCode(e.target.value.toUpperCase())}
+              placeholder="228Q-CJ-CA"
+              pattern="[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{2}"
               required
-              className="mt-2"
+              className="mt-2 font-mono text-center text-lg"
+              maxLength={12}
             />
-          </div>
-
-          <div>
-            <Label htmlFor="libre-password">LibreView Password</Label>
-            <Input
-              id="libre-password"
-              type="password"
-              value={credentials.password}
-              onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
-              placeholder="••••••••"
-              required
-              className="mt-2"
-            />
+            <p className="text-xs text-slate-500 mt-1">Format: XXXX-XX-XX (valid for 72 hours)</p>
           </div>
 
           <div className="p-3 bg-amber-50 rounded-lg">
             <p className="text-xs text-amber-700">
-              <strong>Privacy:</strong> Your credentials are used only to authenticate with LibreView. 
-              We store only the access token to sync your glucose data.
+              <strong>Note:</strong> Sharing codes expire after 72 hours. You'll need to generate a new code after it expires.
             </p>
           </div>
 

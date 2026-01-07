@@ -18,24 +18,21 @@ Deno.serve(async (req) => {
       }, { status: 500 });
     }
 
-    // Get user's profile to check if they have stored their Libre credentials
+    // Get user's profile to check if they have stored their Libre sharing code
     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
     const profile = profiles[0];
 
-    if (!profile?.libre_access_token) {
+    if (!profile?.libre_sharing_code) {
       return Response.json({ 
         error: 'Please connect your LibreView account first',
         needsAuth: true 
       }, { status: 401 });
     }
 
-    // Fetch glucose data from LibreView API
-    const response = await fetch('https://api.libreview.io/llu/connections', {
+    // Fetch glucose data using LibreView Data Share API
+    const response = await fetch(`https://www.libreview.com/sharing/api/glucose/${profile.libre_sharing_code}`, {
       headers: {
-        'Authorization': `Bearer ${profile.libre_access_token}`,
-        'Content-Type': 'application/json',
-        'product': 'llu.android',
-        'version': '4.7.0'
+        'Accept': 'application/json'
       }
     });
 
@@ -50,36 +47,33 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
     
-    // Extract glucose readings
+    // Extract glucose readings from LibreView Data Share API response
     const readings = [];
-    if (data.data && data.data[0]?.glucoseMeasurement) {
-      const measurements = data.data[0].glucoseMeasurement.ValueInMgPerDl;
-      const timestamp = data.data[0].glucoseMeasurement.Timestamp;
-      
+    
+    // Process current glucose reading
+    if (data.current) {
+      const timestamp = new Date(data.current.timestamp);
       readings.push({
-        reading: measurements,
-        reading_time: new Date(timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        date: new Date(timestamp).toISOString().split('T')[0],
+        reading: Math.round(data.current.value),
+        reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        date: timestamp.toISOString().split('T')[0],
         context: 'random',
         source: profile.cgm_device || 'libre2',
-        trend: data.data[0].glucoseMeasurement.TrendArrow || 'stable'
+        trend: data.current.trend || 'stable'
       });
     }
 
-    // Get graph data for historical readings (last 24 hours)
-    if (data.data && data.data[0]?.graphData) {
-      const graphData = data.data[0].graphData;
-      graphData.forEach(point => {
-        if (point.ValueInMgPerDl) {
-          const timestamp = new Date(point.Timestamp);
-          readings.push({
-            reading: point.ValueInMgPerDl,
-            reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-            date: timestamp.toISOString().split('T')[0],
-            context: 'random',
-            source: profile.cgm_device || 'libre2'
-          });
-        }
+    // Process historical readings (last 24-72 hours depending on data share)
+    if (data.history && Array.isArray(data.history)) {
+      data.history.forEach(point => {
+        const timestamp = new Date(point.timestamp);
+        readings.push({
+          reading: Math.round(point.value),
+          reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+          date: timestamp.toISOString().split('T')[0],
+          context: 'random',
+          source: profile.cgm_device || 'libre2'
+        });
       });
     }
 

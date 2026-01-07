@@ -9,49 +9,27 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { email, password } = await req.json();
+    const { sharingCode } = await req.json();
 
-    if (!email || !password) {
-      return Response.json({ error: 'Email and password required' }, { status: 400 });
+    if (!sharingCode) {
+      return Response.json({ error: 'Sharing code required' }, { status: 400 });
     }
 
-    // Authenticate with LibreView
-    const authResponse = await fetch('https://api.libreview.io/llu/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'product': 'llu.android',
-        'version': '4.7.0'
-      },
-      body: JSON.stringify({
-        email: email,
-        password: password
-      })
-    });
-
-    if (!authResponse.ok) {
-      const errorData = await authResponse.json();
+    // Validate the sharing code format (XXXX-XX-XX)
+    const codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{2}$/i;
+    if (!codePattern.test(sharingCode)) {
       return Response.json({ 
-        error: 'LibreView authentication failed',
-        details: errorData 
-      }, { status: authResponse.status });
+        error: 'Invalid sharing code format. Use format: XXXX-XX-XX' 
+      }, { status: 400 });
     }
 
-    const authData = await authResponse.json();
-    
-    if (!authData.data?.authTicket?.token) {
-      return Response.json({ 
-        error: 'Invalid response from LibreView' 
-      }, { status: 500 });
-    }
-
-    // Store the access token in user profile
+    // Store the sharing code in user profile
     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
     const profile = profiles[0];
 
     if (profile) {
       await base44.entities.UserProfile.update(profile.id, {
-        libre_access_token: authData.data.authTicket.token,
+        libre_sharing_code: sharingCode.toUpperCase(),
         libre_connected_at: new Date().toISOString(),
         cgm_device: 'libre2'
       });
@@ -59,8 +37,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
-      message: 'Successfully connected to LibreView',
-      user: authData.data.user
+      message: 'Successfully saved LibreView sharing code'
     });
 
   } catch (error) {
