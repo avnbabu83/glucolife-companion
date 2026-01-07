@@ -98,6 +98,24 @@ export default function MainHome() {
         </div>
       </div>
 
+      {/* Why DiabetEasy Section */}
+      <div className="bg-slate-50 py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-slate-800 mb-8">Why DiabetEasy?</h2>
+          <div className="space-y-6 text-lg text-slate-600 leading-relaxed">
+            <p>
+              Living with diabetes requires constant vigilance—monitoring glucose levels, planning meals, tracking medications, staying active, and managing stress. It can be overwhelming.
+            </p>
+            <p>
+              That's why we created DiabetEasy. We wanted to build a tool that doesn't just track numbers, but actually helps you understand your body and make better decisions. A companion that learns from your patterns and provides guidance tailored to you.
+            </p>
+            <p>
+              Whether you're newly diagnosed or have been managing diabetes for years, DiabetEasy is here to make your journey easier, more informed, and more empowered.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Features Section */}
       <div className="bg-white py-16">
         <div className="max-w-6xl mx-auto px-4">
