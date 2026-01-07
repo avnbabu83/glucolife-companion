@@ -67,8 +67,13 @@ export default function Layout({ children }) {
       {/* Desktop Side Navigation */}
       <nav className="fixed left-0 top-0 bottom-0 w-20 bg-white border-r border-slate-200 hidden lg:flex flex-col items-center py-6 z-50">
         <div className="mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-white" />
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 flex items-center justify-center shadow-lg group hover:scale-110 transition-transform cursor-pointer">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-300 to-transparent opacity-30 rounded-xl"></div>
+            <svg className="w-6 h-6 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+              <path d="M12 16v-4" strokeWidth="3" />
+              <circle cx="12" cy="18" r="0.5" fill="currentColor" strokeWidth="0" />
+            </svg>
           </div>
         </div>
         

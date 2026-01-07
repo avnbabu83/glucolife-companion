@@ -16,10 +16,15 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 py-12 md:py-20">
           <div className="text-center space-y-6">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
-                <Activity className="w-8 h-8 text-white" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 flex items-center justify-center shadow-xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-300 to-transparent opacity-30 rounded-2xl"></div>
+                <svg className="w-10 h-10 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                  <path d="M12 16v-4" strokeWidth="3" />
+                  <circle cx="12" cy="18" r="0.5" fill="currentColor" strokeWidth="0" />
+                </svg>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-slate-800">GlucoGuide</h1>
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">DiabetEasy</h1>
             </div>
             
             <h2 className="text-3xl md:text-4xl font-bold text-slate-800 max-w-3xl mx-auto leading-tight">
@@ -195,7 +200,7 @@ export default function Landing() {
             Ready to Take Control of Your Diabetes?
           </h3>
           <p className="text-xl text-emerald-100 mb-8">
-            Join thousands of people managing their diabetes smarter with GlucoGuide
+            Join thousands of people managing their diabetes smarter with DiabetEasy
           </p>
           <Button 
             size="lg" 
@@ -210,7 +215,7 @@ export default function Landing() {
       {/* Footer */}
       <div className="bg-slate-900 py-8">
         <div className="max-w-6xl mx-auto px-4 text-center text-slate-400">
-          <p>© 2026 GlucoGuide. Your partner in diabetes management.</p>
+          <p>© 2026 DiabetEasy. Your partner in diabetes management.</p>
           <p className="text-sm mt-2">Always consult with your healthcare provider about your diabetes management plan.</p>
         </div>
       </div>
