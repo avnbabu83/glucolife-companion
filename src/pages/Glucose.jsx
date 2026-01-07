@@ -14,15 +14,18 @@ import {
   TrendingDown, 
   Minus,
   CalendarDays,
-  BarChart3
+  BarChart3,
+  Link2
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart, BarChart, Bar } from 'recharts';
 
 import GlucoseEntryForm from '@/components/glucose/GlucoseEntryForm';
 import CGMIntegration from '@/components/cgm/CGMIntegration';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Glucose() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCGMDialog, setShowCGMDialog] = useState(false);
   const queryClient = useQueryClient();
   const dateStr = moment(selectedDate).format('YYYY-MM-DD');
 
@@ -125,22 +128,28 @@ export default function Glucose() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Glucose Tracking</h1>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <CalendarDays className="w-4 h-4 mr-2" />
-                {moment(selectedDate).format('MMM D')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowCGMDialog(true)}>
+              <Link2 className="w-4 h-4 mr-2" />
+              Connect CGM
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  {moment(selectedDate).format('MMM D')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         <Tabs defaultValue="today" className="space-y-6">
@@ -301,6 +310,55 @@ export default function Glucose() {
             />
           </TabsContent>
         </Tabs>
+
+        {/* CGM Connection Dialog */}
+        <Dialog open={showCGMDialog} onOpenChange={setShowCGMDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Connect CGM Device</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-4 bg-emerald-50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <Activity className="w-5 h-5 text-emerald-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-emerald-800">Automatic Glucose Sync</p>
+                    <p className="text-sm text-emerald-600 mt-1">
+                      Connect your Freestyle Libre, Dexcom, or Medtronic device 
+                      to automatically sync glucose readings every 5 minutes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="text-2xl mr-3">📱</span>
+                  Freestyle Libre 2/3
+                </Button>
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="text-2xl mr-3">📊</span>
+                  Dexcom G6/G7
+                </Button>
+                <Button className="w-full justify-start" variant="outline">
+                  <span className="text-2xl mr-3">🏥</span>
+                  Medtronic Guardian
+                </Button>
+              </div>
+              
+              <div className="p-4 bg-amber-50 rounded-xl">
+                <p className="text-sm text-amber-700">
+                  <strong>Note:</strong> Real CGM integration requires backend functions. 
+                  Currently shown as UI placeholder. Contact support to enable live CGM sync via manufacturer APIs.
+                </p>
+              </div>
+              
+              <Button className="w-full" variant="outline" onClick={() => setShowCGMDialog(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

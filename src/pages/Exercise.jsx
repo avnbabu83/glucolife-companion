@@ -20,7 +20,8 @@ import {
   Calendar,
   Flame,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Smartphone
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ import ExerciseCard from '@/components/exercise/ExerciseCard';
 export default function Exercise() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [showHealthDialog, setShowHealthDialog] = useState(false);
   const [newExercise, setNewExercise] = useState({
     name: '',
     exercise_type: 'walking',
@@ -188,6 +190,13 @@ export default function Exercise() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
           <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setShowHealthDialog(true)}
+            >
+              <Smartphone className="w-4 h-4 mr-2" />
+              Connect Health App
+            </Button>
             <Button 
               variant="outline"
               onClick={generateExercisePlan}
@@ -456,6 +465,40 @@ export default function Exercise() {
             })}
           </TabsContent>
         </Tabs>
+
+        {/* Apple Health Connection Dialog */}
+        <Dialog open={showHealthDialog} onOpenChange={setShowHealthDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Connect Apple Health</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <Smartphone className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-blue-800">Sync Your Workouts</p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Connect with Apple Health to automatically import your exercise data, 
+                      calories burned, and activity minutes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-amber-50 rounded-xl">
+                <p className="text-sm text-amber-700">
+                  <strong>Note:</strong> This feature requires backend functions to be enabled. 
+                  Currently, exercise data can be logged manually. Contact support to enable Apple Health integration.
+                </p>
+              </div>
+              
+              <Button className="w-full" variant="outline" onClick={() => setShowHealthDialog(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
