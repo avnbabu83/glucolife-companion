@@ -47,7 +47,7 @@ export default function Landing() {
                 className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-lg px-8 py-6"
                 onClick={handleGetStarted}
               >
-                Get Started Free
+                Get Started
               </Button>
               <Button 
                 size="lg" 
@@ -212,7 +212,7 @@ export default function Landing() {
             className="bg-white text-emerald-600 hover:bg-emerald-50 text-lg px-8 py-6"
             onClick={handleGetStarted}
           >
-            Start Your Journey Today
+            Get Started Now
           </Button>
         </div>
       </div>
