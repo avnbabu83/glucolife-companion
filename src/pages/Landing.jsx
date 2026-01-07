@@ -161,7 +161,7 @@ export default function Landing() {
                 <div>
                   <h4 className="text-xl font-bold text-slate-800 mb-2">Personalized Care</h4>
                   <p className="text-slate-600">
-                    We believe that diabetes management is not one-size-fits-all. GlucoGuide uses advanced AI to 
+                    We believe that diabetes management is not one-size-fits-all. DiabetEasy uses advanced AI to 
                     understand your unique patterns and provide personalized recommendations that actually work for your body.
                   </p>
                 </div>
