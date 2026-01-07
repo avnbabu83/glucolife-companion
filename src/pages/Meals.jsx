@@ -7,21 +7,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { 
   CalendarDays, 
   ChevronLeft, 
   ChevronRight,
   Plus,
-  Sparkles
+  Sparkles,
+  Utensils
 } from 'lucide-react';
 
 import MealCard from '@/components/meals/MealCard';
 import MealPlanGenerator from '@/components/meals/MealPlanGenerator';
+import QuickFoodLog from '@/components/logging/QuickFoodLog';
 
 export default function Meals() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showGenerator, setShowGenerator] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
+  const [showFoodLog, setShowFoodLog] = useState(false);
   const queryClient = useQueryClient();
 
   const dateStr = moment(selectedDate).format('YYYY-MM-DD');
@@ -54,6 +58,15 @@ export default function Meals() {
     },
   });
 
+  const createMealMutation = useMutation({
+    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      toast.success('Food logged successfully!');
+      setShowFoodLog(false);
+    },
+  });
+
   const handleCompleteMeal = (meal) => {
     updateMealMutation.mutate({
       id: meal.id,
@@ -74,6 +87,14 @@ export default function Meals() {
       });
     });
     createMealsMutation.mutate(allMeals);
+  };
+
+  const handleFoodSubmit = (data) => {
+    if (data.id) {
+      updateMealMutation.mutate({ id: data.id, data });
+    } else {
+      createMealMutation.mutate(data);
+    }
   };
 
   const goToPreviousDay = () => {
@@ -97,13 +118,22 @@ export default function Meals() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
-          <Button 
-            onClick={() => setShowGenerator(!showGenerator)}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Generate Plan
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowFoodLog(true)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Utensils className="w-4 h-4 mr-2" />
+              Log Food
+            </Button>
+            <Button 
+              onClick={() => setShowGenerator(!showGenerator)}
+              variant="outline"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate Plan
+            </Button>
+          </div>
         </div>
 
         {/* AI Generator */}
@@ -200,6 +230,19 @@ export default function Meals() {
           )}
         </div>
 
+        {/* Food Log Dialog */}
+        <Dialog open={showFoodLog} onOpenChange={setShowFoodLog}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Log Food</DialogTitle>
+            </DialogHeader>
+            <QuickFoodLog 
+              onSubmit={handleFoodSubmit}
+              todayMeals={meals}
+            />
+          </DialogContent>
+        </Dialog>
+
         {/* Meal Detail Dialog */}
         <Dialog open={!!selectedMeal} onOpenChange={() => setSelectedMeal(null)}>
           <DialogContent className="max-w-md">
@@ -210,7 +253,7 @@ export default function Meals() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <p className="text-slate-600">{selectedMeal.description}</p>
-                  
+
                   {selectedMeal.ingredients?.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-slate-700 mb-2">Ingredients</h4>
@@ -221,7 +264,7 @@ export default function Meals() {
                       </ul>
                     </div>
                   )}
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                       <p className="text-sm text-slate-500">Calories</p>
@@ -245,7 +288,7 @@ export default function Meals() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
-  );
-}
+        </div>
+        </div>
+        );
+        }
