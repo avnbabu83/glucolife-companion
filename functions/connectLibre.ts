@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
                   'Product': 'llu.android',
-                  'Version': '4.7.0'
+                  'Version': '4.16.0'
                 },
                 body: JSON.stringify({
                   email: email,
