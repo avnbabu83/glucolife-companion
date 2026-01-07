@@ -240,6 +240,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // LibreLinkUp API returns values in mmol/L for most regions (including Canada)
+      // Convert to mg/dL (multiply by 18.018) if the value is too low (likely mmol/L)
+      // Typical mmol/L range: 3.0-10.0, typical mg/dL range: 54-180
+      if (glucoseValue < 25) {
+        // Value is likely in mmol/L, convert to mg/dL
+        glucoseValue = Math.round(glucoseValue * 18.018);
+        console.log(`Converted ${reading.value || reading.Value} mmol/L to ${glucoseValue} mg/dL`);
+      }
+
       const date = timestamp.toISOString().split('T')[0];
       const time = timestamp.toTimeString().split(' ')[0].substring(0, 5);
       const key = `${date}_${time}`;
