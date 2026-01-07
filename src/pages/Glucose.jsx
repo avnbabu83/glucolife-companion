@@ -15,8 +15,10 @@ import {
   Minus,
   CalendarDays,
   BarChart3,
-  Link2
+  Link2,
+  RefreshCw
 } from 'lucide-react';
+import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart, BarChart, Bar } from 'recharts';
 
 import GlucoseEntryForm from '@/components/glucose/GlucoseEntryForm';
@@ -129,9 +131,33 @@ export default function Glucose() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Glucose Tracking</h1>
           <div className="flex gap-2">
+            {userProfile?.libre_sharing_code && (
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  try {
+                    const res = await base44.functions.invoke('syncLibreData', {});
+                    console.log('Sync response:', res.data);
+                    if (res.data.success) {
+                      queryClient.invalidateQueries({ queryKey: ['glucoseReadings'] });
+                      queryClient.invalidateQueries({ queryKey: ['weekGlucose'] });
+                      toast.success(`Synced ${res.data.synced} new readings`);
+                    } else {
+                      toast.error(res.data.error || 'Sync failed');
+                    }
+                  } catch (err) {
+                    console.error('Sync error:', err);
+                    toast.error(err.response?.data?.error || 'Failed to sync');
+                  }
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Sync Libre
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowCGMDialog(true)}>
               <Link2 className="w-4 h-4 mr-2" />
-              Connect CGM
+              {userProfile?.libre_sharing_code ? 'CGM Settings' : 'Connect CGM'}
             </Button>
             <Popover>
               <PopoverTrigger asChild>
