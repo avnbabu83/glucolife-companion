@@ -2,6 +2,8 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus, Activity, Utensils, Pill, Moon } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 
 export default function QuickStats({ latestGlucose, mealsToday, medicationsTaken, sleepHours, targetMin = 70, targetMax = 140 }) {
   const getGlucoseStatus = () => {
@@ -21,7 +23,8 @@ export default function QuickStats({ latestGlucose, mealsToday, medicationsTaken
       icon: Activity,
       color: glucoseStatus.color,
       bg: glucoseStatus.bg,
-      subtitle: glucoseStatus.status
+      subtitle: glucoseStatus.status,
+      link: createPageUrl('CGMDashboard')
     },
     {
       label: 'Meals Today',
@@ -30,7 +33,8 @@ export default function QuickStats({ latestGlucose, mealsToday, medicationsTaken
       icon: Utensils,
       color: 'text-violet-600',
       bg: 'bg-violet-50',
-      subtitle: 'of planned meals'
+      subtitle: 'of planned meals',
+      link: createPageUrl('Meals')
     },
     {
       label: 'Medications',
@@ -39,7 +43,8 @@ export default function QuickStats({ latestGlucose, mealsToday, medicationsTaken
       icon: Pill,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
-      subtitle: 'on schedule'
+      subtitle: 'on schedule',
+      link: createPageUrl('Medications')
     },
     {
       label: 'Sleep',
@@ -48,28 +53,31 @@ export default function QuickStats({ latestGlucose, mealsToday, medicationsTaken
       icon: Moon,
       color: 'text-indigo-600',
       bg: 'bg-indigo-50',
-      subtitle: 'last night'
+      subtitle: 'last night',
+      link: createPageUrl('Sleep')
     }
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => (
-        <Card key={index} className={cn("p-5 border-0 shadow-sm", stat.bg)}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.label}</p>
-              <div className="flex items-baseline gap-1.5 mt-2">
-                <span className={cn("text-3xl font-bold", stat.color)}>{stat.value}</span>
-                <span className="text-sm text-slate-500">{stat.unit}</span>
+        <Link key={index} to={stat.link}>
+          <Card className={cn("p-5 border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer", stat.bg)}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.label}</p>
+                <div className="flex items-baseline gap-1.5 mt-2">
+                  <span className={cn("text-3xl font-bold", stat.color)}>{stat.value}</span>
+                  <span className="text-sm text-slate-500">{stat.unit}</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{stat.subtitle}</p>
               </div>
-              <p className="text-xs text-slate-500 mt-1">{stat.subtitle}</p>
+              <div className={cn("p-2.5 rounded-xl", stat.bg)}>
+                <stat.icon className={cn("w-5 h-5", stat.color)} />
+              </div>
             </div>
-            <div className={cn("p-2.5 rounded-xl", stat.bg)}>
-              <stat.icon className={cn("w-5 h-5", stat.color)} />
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </Link>
       ))}
     </div>
   );
