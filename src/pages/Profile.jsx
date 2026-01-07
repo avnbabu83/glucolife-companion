@@ -10,7 +10,9 @@ import {
   Settings,
   LogOut,
   Shield,
-  Bell
+  Bell,
+  Lock,
+  Trash2
 } from 'lucide-react';
 import { toast } from "sonner";
 
@@ -126,6 +128,10 @@ export default function Profile() {
               <Bell className="w-4 h-4 mr-2" />
               Reminders
             </TabsTrigger>
+            <TabsTrigger value="account">
+              <Settings className="w-4 h-4 mr-2" />
+              Account
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -192,6 +198,75 @@ export default function Profile() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="account">
+            <div className="space-y-6">
+              {/* Change Password */}
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-slate-500" />
+                    Change Password
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-xl">
+                    <p className="text-sm text-blue-700 mb-3">
+                      To change your password, please sign out and use the "Forgot Password" option on the login page.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleLogout}
+                      className="w-full sm:w-auto"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out to Reset Password
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Delete Account */}
+              <Card className="border-0 shadow-sm border-rose-200">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2 text-rose-600">
+                    <Trash2 className="w-5 h-5" />
+                    Delete Account
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-rose-50 rounded-xl">
+                    <h4 className="font-semibold text-rose-800 mb-2">⚠️ This action cannot be undone</h4>
+                    <p className="text-sm text-rose-700 mb-3">
+                      Deleting your account will permanently remove:
+                    </p>
+                    <ul className="text-sm text-rose-700 list-disc ml-5 space-y-1">
+                      <li>Your health profile and diabetes information</li>
+                      <li>All glucose readings and measurements</li>
+                      <li>Meal plans and dietary history</li>
+                      <li>Medication logs and schedules</li>
+                      <li>Exercise plans and workout history</li>
+                      <li>Sleep tracking data</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    variant="destructive"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      if (confirm('Are you absolutely sure? This action cannot be undone. All your health data will be permanently deleted.')) {
+                        if (confirm('Final confirmation: Delete your account and all data?')) {
+                          toast.error('Account deletion is not yet implemented. Please contact support to delete your account.');
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete My Account
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
