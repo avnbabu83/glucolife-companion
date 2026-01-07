@@ -8,6 +8,8 @@ import Medications from './pages/Medications';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
+import MainHome from './pages/MainHome';
+import MainAboutUs from './pages/MainAboutUs';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +24,8 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
+    "MainHome": MainHome,
+    "MainAboutUs": MainAboutUs,
 }
 
 export const pagesConfig = {
