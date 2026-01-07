@@ -37,14 +37,14 @@ export default function Home() {
     const loadUser = async () => {
       const isAuthenticated = await base44.auth.isAuthenticated();
       if (!isAuthenticated) {
-        navigate(createPageUrl('Landing'));
+        navigate(createPageUrl('MainHome'));
         return;
       }
       try {
         const userData = await base44.auth.me();
         setUser(userData);
       } catch (error) {
-        navigate(createPageUrl('Landing'));
+        navigate(createPageUrl('MainHome'));
       }
     };
     loadUser();
