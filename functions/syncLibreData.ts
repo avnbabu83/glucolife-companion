@@ -9,137 +9,182 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's profile to check if they have stored their Libre sharing code
+    // Get user's profile to check LibreLinkUp credentials
     const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
     const profile = profiles[0];
-
-    if (!profile?.libre_sharing_code) {
+    
+    if (!profile?.libre_email || !profile?.libre_password) {
       return Response.json({ 
-        error: 'Please connect your LibreView account first',
-        needsAuth: true 
+        needsAuth: true,
+        error: 'Please connect your LibreLinkUp account first' 
+      }, { status: 400 });
+    }
+
+    // Authenticate with LibreLinkUp
+    console.log('Authenticating with LibreLinkUp...');
+    const loginResponse = await fetch('https://api-us.libreview.io/llu/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Product': 'llu.android',
+        'Version': '4.7.0'
+      },
+      body: JSON.stringify({
+        email: profile.libre_email,
+        password: profile.libre_password
+      })
+    });
+
+    if (!loginResponse.ok) {
+      const errorText = await loginResponse.text();
+      return Response.json({ 
+        error: 'Failed to authenticate with LibreLinkUp. Please reconnect.',
+        details: errorText 
       }, { status: 401 });
     }
 
-    // Fetch glucose data using LibreView Data Share API
-    const apiUrl = `https://www.libreview.com/sharing/api/glucose/${profile.libre_sharing_code}`;
-    console.log('Fetching from:', apiUrl);
+    const authData = await loginResponse.json();
+    const token = authData.data?.authTicket?.token;
     
-    const response = await fetch(apiUrl, {
+    if (!token) {
+      return Response.json({ 
+        error: 'No auth token received from LibreLinkUp' 
+      }, { status: 500 });
+    }
+
+    // Fetch connections (patients)
+    console.log('Fetching connections...');
+    const connectionsResponse = await fetch('https://api-us.libreview.io/llu/connections', {
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
-        'User-Agent': 'GlucoGuide/1.0'
+        'Product': 'llu.android',
+        'Version': '4.7.0'
       }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('LibreView API error:', response.status, errorText);
+    if (!connectionsResponse.ok) {
       return Response.json({ 
-        error: `Failed to fetch from LibreView (Status: ${response.status})`,
-        details: errorText,
-        url: apiUrl
-      }, { status: response.status });
+        error: 'Failed to fetch connections',
+        status: connectionsResponse.status 
+      }, { status: connectionsResponse.status });
     }
 
-    let data;
-    const contentType = response.headers.get('content-type');
-    const responseText = await response.text();
+    const data = await connectionsResponse.json();
+    console.log('LibreLinkUp response:', JSON.stringify(data, null, 2));
     
-    console.log('Response content-type:', contentType);
-    console.log('Response preview:', responseText.substring(0, 500));
+    // Extract glucose readings from connections
+    let readings = [];
     
-    if (!contentType?.includes('application/json')) {
-      return Response.json({ 
-        error: 'LibreView returned HTML instead of JSON. The sharing code API endpoint may not be publicly accessible.',
-        suggestion: 'LibreView sharing codes may only work in the browser. Consider using manual entry or Abbott\'s official API.',
-        contentType,
-        responsePreview: responseText.substring(0, 200)
-      }, { status: 500 });
-    }
-    
-    try {
-      data = JSON.parse(responseText);
-      console.log('LibreView API response:', JSON.stringify(data, null, 2));
-    } catch (parseError) {
-      return Response.json({ 
-        error: 'Failed to parse LibreView response',
-        details: parseError.message,
-        responsePreview: responseText.substring(0, 200)
-      }, { status: 500 });
-    }
-    
-    // Extract glucose readings from LibreView Data Share API response
-    const readings = [];
-    
-    // Try multiple possible response formats
-    // Format 1: {current: {value, timestamp}, history: [...]}
-    if (data.current) {
-      const timestamp = new Date(data.current.timestamp);
-      readings.push({
-        reading: Math.round(data.current.value),
-        reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        date: timestamp.toISOString().split('T')[0],
-        context: 'random',
-        source: profile.cgm_device || 'libre2',
-        trend: data.current.trend || 'stable'
-      });
-    }
-
-    if (data.history && Array.isArray(data.history)) {
-      data.history.forEach(point => {
-        const timestamp = new Date(point.timestamp);
+    if (data.data && Array.isArray(data.data)) {
+      // Get the first connection (patient)
+      const connection = data.data[0];
+      
+      if (connection?.glucoseMeasurement) {
         readings.push({
-          reading: Math.round(point.value),
-          reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          date: timestamp.toISOString().split('T')[0],
-          context: 'random',
-          source: profile.cgm_device || 'libre2'
+          value: connection.glucoseMeasurement.Value,
+          timestamp: connection.glucoseMeasurement.Timestamp,
+          trend: connection.glucoseMeasurement.TrendArrow
         });
-      });
-    }
-
-    // Format 2: {data: {connection: {glucoseMeasurement: {...}}}}
-    if (data.data?.connection?.glucoseMeasurement) {
-      const gm = data.data.connection.glucoseMeasurement;
-      const timestamp = new Date(gm.Timestamp || gm.timestamp);
-      readings.push({
-        reading: Math.round(gm.ValueInMgPerDl || gm.Value),
-        reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        date: timestamp.toISOString().split('T')[0],
-        context: 'random',
-        source: profile.cgm_device || 'libre2',
-        trend: gm.TrendArrow || 'stable'
-      });
-    }
-
-    // Format 3: Array of readings directly
-    if (Array.isArray(data)) {
-      data.forEach(point => {
-        const timestamp = new Date(point.timestamp || point.Timestamp);
+      }
+      
+      // Also get graph data if available
+      if (connection?.glucoseItem?.Value) {
         readings.push({
-          reading: Math.round(point.value || point.ValueInMgPerDl || point.Value),
-          reading_time: timestamp.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          date: timestamp.toISOString().split('T')[0],
-          context: 'random',
-          source: profile.cgm_device || 'libre2'
+          value: connection.glucoseItem.Value,
+          timestamp: connection.glucoseItem.Timestamp
         });
+      }
+      
+      // Get historical graph data
+      if (connection?.graphData && Array.isArray(connection.graphData)) {
+        readings = readings.concat(connection.graphData.map(r => ({
+          value: r.Value,
+          timestamp: r.Timestamp
+        })));
+      }
+    }
+
+    console.log(`Found ${readings.length} readings`);
+
+    if (readings.length === 0) {
+      return Response.json({ 
+        success: true,
+        synced: 0,
+        message: 'No glucose readings found. Make sure you have an active connection.',
+        connections: data.data?.length || 0
       });
     }
 
-    console.log(`Parsed ${readings.length} readings from API response`);
-
-    // Store readings in database (avoid duplicates by checking time)
-    const today = new Date().toISOString().split('T')[0];
+    // Get existing readings to avoid duplicates
     const existingReadings = await base44.entities.GlucoseReading.filter({ 
-      date: today,
       created_by: user.email 
     });
 
-    const newReadings = readings.filter(r => {
-      return !existingReadings.some(er => 
-        er.reading_time === r.reading_time && er.date === r.date
-      );
-    });
+    // Create a set of existing timestamps for quick lookup
+    const existingTimestamps = new Set(
+      existingReadings.map(r => `${r.date}_${r.reading_time}`)
+    );
+
+    // Process and store new readings
+    const newReadings = [];
+    
+    for (const reading of readings) {
+      // Extract timestamp
+      let timestamp;
+      if (reading.timestamp) {
+        timestamp = new Date(reading.timestamp);
+      } else if (reading.Timestamp) {
+        timestamp = new Date(reading.Timestamp);
+      } else {
+        continue;
+      }
+
+      // Extract glucose value
+      let glucoseValue;
+      if (reading.value !== undefined) {
+        glucoseValue = reading.value;
+      } else if (reading.Value !== undefined) {
+        glucoseValue = reading.Value;
+      } else {
+        continue;
+      }
+
+      const date = timestamp.toISOString().split('T')[0];
+      const time = timestamp.toTimeString().split(' ')[0].substring(0, 5);
+      const key = `${date}_${time}`;
+
+      // Skip if already exists
+      if (existingTimestamps.has(key)) {
+        continue;
+      }
+
+      // Map LibreLinkUp trend arrows
+      let trend = 'stable';
+      const trendValue = reading.trend || reading.TrendArrow;
+      if (trendValue) {
+        const trendMap = {
+          1: 'rising_fast', 'SINGLE_UP': 'rising_fast',
+          2: 'rising', 'FORTY_FIVE_UP': 'rising',
+          3: 'stable', 'FLAT': 'stable',
+          4: 'falling', 'FORTY_FIVE_DOWN': 'falling',
+          5: 'falling_fast', 'SINGLE_DOWN': 'falling_fast'
+        };
+        trend = trendMap[trendValue] || 'stable';
+      }
+
+      newReadings.push({
+        reading: glucoseValue,
+        reading_time: time,
+        date: date,
+        context: 'random',
+        source: profile.cgm_device || 'libre2',
+        trend: trend
+      });
+    }
+
+    console.log(`Inserting ${newReadings.length} new readings`);
 
     if (newReadings.length > 0) {
       await base44.entities.GlucoseReading.bulkCreate(newReadings);
@@ -149,12 +194,9 @@ Deno.serve(async (req) => {
       success: true,
       synced: newReadings.length,
       total: readings.length,
-      message: `Synced ${newReadings.length} new glucose readings`,
-      debug: {
-        apiResponseKeys: Object.keys(data),
-        readingsParsed: readings.length,
-        sampledReading: readings[0] || null
-      }
+      message: newReadings.length > 0 
+        ? `Synced ${newReadings.length} new glucose readings` 
+        : 'All readings are already synced'
     });
 
   } catch (error) {
