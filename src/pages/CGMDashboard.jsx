@@ -515,7 +515,7 @@ export default function CGMDashboard() {
                     To enable push notifications on your iOS device:
                   </p>
                   <ol className="list-decimal ml-4 space-y-2 text-sm text-blue-700">
-                    <li>Go to iOS Settings → GlucoGuide</li>
+                    <li>Go to iOS Settings → DiabetEasy</li>
                     <li>Enable "Allow Notifications"</li>
                     <li>Enable "Time Sensitive Notifications" for critical alerts</li>
                     <li>Return to the app to set your reminder schedule</li>
