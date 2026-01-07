@@ -123,11 +123,24 @@ export default function Home() {
             </h1>
             <p className="text-slate-500 mt-1">{moment().format('dddd, MMMM D')}</p>
           </div>
-          <Link to={createPageUrl('Profile')}>
-            <Button variant="outline" size="icon">
-              <Settings className="w-5 h-5" />
-            </Button>
-          </Link>
+        </div>
+
+        {/* Quick Log Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => navigate(createPageUrl('Meals'))}
+            className="h-auto py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 flex items-center justify-center gap-2"
+          >
+            <Utensils className="w-5 h-5" />
+            <span className="font-semibold">Log Food</span>
+          </Button>
+          <Button 
+            onClick={() => navigate(createPageUrl('Exercise'))}
+            className="h-auto py-4 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 flex items-center justify-center gap-2"
+          >
+            <Dumbbell className="w-5 h-5" />
+            <span className="font-semibold">Log Workout</span>
+          </Button>
         </div>
 
 
