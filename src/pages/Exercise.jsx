@@ -344,6 +344,26 @@ export default function Exercise() {
             <TabsTrigger value="week">Weekly Plan</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="wearables">
+            <WearableIntegration 
+              connectedDevice={profile?.wearable_device}
+              onDeviceChange={(device) => {
+                if (profile) {
+                  updateProfileMutation.mutate({ 
+                    id: profile.id, 
+                    data: { wearable_device: device } 
+                  });
+                }
+              }}
+              latestData={{
+                sleep_hours: profile?.last_sleep_hours,
+                heart_rate: profile?.last_heart_rate,
+                steps: profile?.last_steps,
+                calories: profile?.last_calories
+              }}
+            />
+          </TabsContent>
+
           <TabsContent value="today" className="space-y-6">
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">

@@ -20,8 +20,16 @@ export default function WearableIntegration({ connectedDevice, onDeviceChange, l
   ];
 
   const handleConnect = async (deviceId) => {
+    if (deviceId === 'fitbit') {
+      // Redirect to Fitbit OAuth
+      const redirectUri = `${window.location.origin}/Profile?tab=wearables`;
+      const authUrl = `https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=23PR43&scope=activity%20heartrate%20sleep&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      window.location.href = authUrl;
+      return;
+    }
+    
     setConnecting(true);
-    // Simulate connection
+    // Simulate connection for other devices
     setTimeout(() => {
       onDeviceChange?.(deviceId);
       toast.success('Wearable connected successfully');
