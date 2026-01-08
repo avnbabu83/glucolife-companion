@@ -10,6 +10,7 @@ import Medications from './pages/Medications';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
+import AdminUsers from './pages/AdminUsers';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
+    "AdminUsers": AdminUsers,
 }
 
 export const pagesConfig = {
