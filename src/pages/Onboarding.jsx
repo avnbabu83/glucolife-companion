@@ -18,6 +18,7 @@ export default function Onboarding() {
   const [profileData, setProfileData] = useState({
     diabetes_type: '',
     dietary_preference: '',
+    gender: '',
     age: '',
     weight: '',
     height: '',
@@ -132,36 +133,53 @@ export default function Onboarding() {
               <div>
                 <h2 className="text-xl font-semibold text-slate-800 mb-4">Physical Details</h2>
                 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label>Age</Label>
-                    <Input
-                      type="number"
-                      value={profileData.age}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, age: parseInt(e.target.value) }))}
-                      placeholder="45"
-                      className="mt-2 h-12"
-                    />
+                    <Label className="text-base font-medium">Gender</Label>
+                    <Select value={profileData.gender} onValueChange={(v) => setProfileData(prev => ({ ...prev, gender: v }))}>
+                      <SelectTrigger className="mt-2 h-12">
+                        <SelectValue placeholder="Select your gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <Label>Weight (kg)</Label>
-                    <Input
-                      type="number"
-                      value={profileData.weight}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, weight: parseFloat(e.target.value) }))}
-                      placeholder="70"
-                      className="mt-2 h-12"
-                    />
-                  </div>
-                  <div>
-                    <Label>Height (cm)</Label>
-                    <Input
-                      type="number"
-                      value={profileData.height}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, height: parseFloat(e.target.value) }))}
-                      placeholder="170"
-                      className="mt-2 h-12"
-                    />
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label>Age</Label>
+                      <Input
+                        type="number"
+                        value={profileData.age}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, age: parseInt(e.target.value) }))}
+                        placeholder="45"
+                        className="mt-2 h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label>Weight (kg)</Label>
+                      <Input
+                        type="number"
+                        value={profileData.weight}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, weight: parseFloat(e.target.value) }))}
+                        placeholder="70"
+                        className="mt-2 h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label>Height (cm)</Label>
+                      <Input
+                        type="number"
+                        value={profileData.height}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, height: parseFloat(e.target.value) }))}
+                        placeholder="170"
+                        className="mt-2 h-12"
+                      />
+                    </div>
                   </div>
                 </div>
 
