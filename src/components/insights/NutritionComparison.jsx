@@ -53,31 +53,51 @@ export default function NutritionComparison({ dateRange = 7 }) {
   const plannedTotals = calculateTotals(allPlannedMeals);
   const eatenTotals = calculateTotals(eatenMeals);
 
+  // Calculate daily averages
+  const daysWithPlannedMeals = new Set(allPlannedMeals.map(m => m.date)).size || 1;
+  const daysWithEatenMeals = new Set(eatenMeals.map(m => m.date)).size || 1;
+
+  const plannedDailyAvg = {
+    calories: Math.round(plannedTotals.calories / daysWithPlannedMeals),
+    carbs: Math.round(plannedTotals.carbs / daysWithPlannedMeals),
+    protein: Math.round(plannedTotals.protein / daysWithPlannedMeals),
+    fat: Math.round(plannedTotals.fat / daysWithPlannedMeals),
+    fiber: Math.round(plannedTotals.fiber / daysWithPlannedMeals)
+  };
+
+  const eatenDailyAvg = {
+    calories: Math.round(eatenTotals.calories / daysWithEatenMeals),
+    carbs: Math.round(eatenTotals.carbs / daysWithEatenMeals),
+    protein: Math.round(eatenTotals.protein / daysWithEatenMeals),
+    fat: Math.round(eatenTotals.fat / daysWithEatenMeals),
+    fiber: Math.round(eatenTotals.fiber / daysWithEatenMeals)
+  };
+
   const comparisonData = [
     {
       name: 'Calories',
-      Planned: plannedTotals.calories,
-      Actual: eatenTotals.calories,
+      Planned: plannedDailyAvg.calories,
+      Actual: eatenDailyAvg.calories,
     },
     {
       name: 'Carbs (g)',
-      Planned: plannedTotals.carbs,
-      Actual: eatenTotals.carbs,
+      Planned: plannedDailyAvg.carbs,
+      Actual: eatenDailyAvg.carbs,
     },
     {
       name: 'Protein (g)',
-      Planned: plannedTotals.protein,
-      Actual: eatenTotals.protein,
+      Planned: plannedDailyAvg.protein,
+      Actual: eatenDailyAvg.protein,
     },
     {
       name: 'Fat (g)',
-      Planned: plannedTotals.fat,
-      Actual: eatenTotals.fat,
+      Planned: plannedDailyAvg.fat,
+      Actual: eatenDailyAvg.fat,
     },
     {
       name: 'Fiber (g)',
-      Planned: plannedTotals.fiber,
-      Actual: eatenTotals.fiber,
+      Planned: plannedDailyAvg.fiber,
+      Actual: eatenDailyAvg.fiber,
     },
   ];
 
