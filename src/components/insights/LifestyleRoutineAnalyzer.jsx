@@ -45,55 +45,65 @@ export default function LifestyleRoutineAnalyzer() {
     }
   });
 
-  const mergeRecommendations = async () => {
+  const [showMergePreview, setShowMergePreview] = useState(false);
+  const [mergePreview, setMergePreview] = useState({ meals: [], exercises: [] });
+
+  const generateMergePreview = () => {
     if (!analysis) return;
     
+    const meals = [];
+    const exercises = [];
+
+    // Convert meal recommendations to meal plans
+    if (analysis.meal_recommendations?.length > 0) {
+      analysis.meal_recommendations.forEach((rec, idx) => {
+        const date = moment().add(idx, 'days').format('YYYY-MM-DD');
+        meals.push({
+          date,
+          meal_type: rec.meal?.toLowerCase() || 'breakfast',
+          scheduled_time: rec.suggested_time || '07:00',
+          meal_name: rec.meal_ideas?.[0] || `${rec.meal}`,
+          description: rec.reasoning,
+          calories: 400,
+          carbs: 50,
+          protein: 20,
+          fat: 15,
+          fiber: 5,
+          glycemic_index: 'low',
+          is_completed: false,
+          source: 'lifestyle_analyzer'
+        });
+      });
+    }
+
+    // Convert exercise opportunities to exercise plans
+    if (analysis.exercise_opportunities?.length > 0) {
+      analysis.exercise_opportunities.forEach(opp => {
+        exercises.push({
+          name: opp.activity,
+          exercise_type: 'walking',
+          duration_minutes: parseInt(opp.duration) || 30,
+          intensity: 'moderate',
+          scheduled_days: ['Mon', 'Wed', 'Fri'],
+          scheduled_time: '07:00',
+          calories_burned: 150,
+          notes: opp.how_to_fit,
+          precautions: 'Check glucose before and after exercise',
+          is_active: true,
+          source: 'lifestyle_analyzer'
+        });
+      });
+    }
+
+    setMergePreview({ meals, exercises });
+    setShowMergePreview(true);
+  };
+
+  const confirmMerge = async () => {
     setMerging(true);
     try {
-      const today = moment().format('YYYY-MM-DD');
-      const meals = [];
-      const exercises = [];
-
-      // Convert meal recommendations to meal plans
-      if (analysis.meal_recommendations?.length > 0) {
-        analysis.meal_recommendations.forEach((rec, idx) => {
-          const date = moment().add(idx, 'days').format('YYYY-MM-DD');
-          meals.push({
-            date,
-            meal_type: rec.meal?.toLowerCase() || 'breakfast',
-            scheduled_time: rec.suggested_time || '07:00',
-            meal_name: rec.meal_ideas?.[0] || `${rec.meal}`,
-            description: rec.reasoning,
-            calories: 400,
-            carbs: 50,
-            protein: 20,
-            fat: 15,
-            fiber: 5,
-            glycemic_index: 'low',
-            is_completed: false
-          });
-        });
-      }
-
-      // Convert exercise opportunities to exercise plans
-      if (analysis.exercise_opportunities?.length > 0) {
-        analysis.exercise_opportunities.forEach(opp => {
-          exercises.push({
-            name: opp.activity,
-            exercise_type: 'walking',
-            duration_minutes: parseInt(opp.duration) || 30,
-            intensity: 'moderate',
-            scheduled_days: ['Mon', 'Wed', 'Fri'],
-            scheduled_time: '07:00',
-            calories_burned: 150,
-            notes: opp.how_to_fit,
-            precautions: 'Check glucose before and after exercise',
-            is_active: true
-          });
-        });
-      }
-
-      await mergeMutation.mutateAsync({ meals, exercises });
+      await mergeMutation.mutateAsync(mergePreview);
+      setShowMergePreview(false);
     } catch (error) {
       toast.error('Failed to merge recommendations');
     } finally {
@@ -219,14 +229,15 @@ export default function LifestyleRoutineAnalyzer() {
   };
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">Lifestyle Routine Analyzer</CardTitle>
-        <p className="text-sm text-slate-500 mt-1">
-          Describe your daily routine in your own words, and get personalized diabetes management recommendations
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <>
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Lifestyle Routine Analyzer</CardTitle>
+          <p className="text-sm text-slate-500 mt-1">
+            Describe your daily routine in your own words, and get personalized diabetes management recommendations
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
         <div>
           <Label>Describe Your Daily Routine</Label>
           <Textarea
@@ -262,21 +273,11 @@ export default function LifestyleRoutineAnalyzer() {
           <div className="space-y-6 pt-4 border-t">
             {/* Merge Button */}
             <Button 
-              onClick={mergeRecommendations}
-              disabled={merging}
+              onClick={generateMergePreview}
               className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
             >
-              {merging ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Merging Recommendations...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Merge into Meal & Exercise Plans
-                </>
-              )}
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Preview & Merge Recommendations
             </Button>
             {/* Schedule Breakdown */}
             {analysis.schedule_breakdown?.length > 0 && (
@@ -424,5 +425,97 @@ export default function LifestyleRoutineAnalyzer() {
         )}
       </CardContent>
     </Card>
+
+    {/* Merge Preview Dialog */}
+    <Dialog open={showMergePreview} onOpenChange={setShowMergePreview}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Preview Recommendations to Merge</DialogTitle>
+          <p className="text-sm text-slate-500">
+            Review what will be added to your meal and exercise plans. These will appear with a special indicator.
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-6 pt-4">
+          {mergePreview.meals.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                <Utensils className="w-4 h-4 text-emerald-600" />
+                Meals to Add ({mergePreview.meals.length})
+              </h4>
+              <div className="space-y-2">
+                {mergePreview.meals.map((meal, idx) => (
+                  <div key={idx} className="p-3 bg-emerald-50 rounded-xl border-2 border-emerald-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-emerald-800">{meal.meal_name}</p>
+                      <Badge className="bg-emerald-200 text-emerald-800 text-xs">
+                        From Analyzer
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-emerald-700 mb-1">
+                      {meal.date} • {meal.scheduled_time} • {meal.meal_type}
+                    </p>
+                    <p className="text-xs text-slate-600">{meal.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mergePreview.exercises.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                <Dumbbell className="w-4 h-4 text-violet-600" />
+                Exercises to Add ({mergePreview.exercises.length})
+              </h4>
+              <div className="space-y-2">
+                {mergePreview.exercises.map((exercise, idx) => (
+                  <div key={idx} className="p-3 bg-violet-50 rounded-xl border-2 border-violet-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-violet-800">{exercise.name}</p>
+                      <Badge className="bg-violet-200 text-violet-800 text-xs">
+                        From Analyzer
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-violet-700 mb-1">
+                      {exercise.duration_minutes} min • {exercise.intensity} • {exercise.scheduled_days.join(', ')}
+                    </p>
+                    <p className="text-xs text-slate-600">{exercise.notes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button 
+              variant="outline"
+              onClick={() => setShowMergePreview(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmMerge}
+              disabled={merging}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            >
+              {merging ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Merging...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Confirm & Merge
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

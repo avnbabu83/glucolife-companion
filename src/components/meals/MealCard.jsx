@@ -6,6 +6,7 @@ import { Check, Clock, Flame, Wheat, Drumstick, Droplets, Trash2 } from 'lucide-
 import { cn } from "@/lib/utils";
 
 export default function MealCard({ meal, onComplete, onViewDetails, onDelete }) {
+  const isFromAnalyzer = meal.source === 'lifestyle_analyzer';
   const mealTypeColors = {
     breakfast: 'bg-amber-50 text-amber-700 border-amber-200',
     morning_snack: 'bg-orange-50 text-orange-700 border-orange-200',

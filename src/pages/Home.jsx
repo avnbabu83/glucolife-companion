@@ -27,11 +27,13 @@ import QuickWorkoutLog from '@/components/logging/QuickWorkoutLog';
 import NutritionComparison from '@/components/insights/NutritionComparison';
 import GlucoseTrendAnalysis from '@/components/insights/GlucoseTrendAnalysis';
 import LifestyleRoutineAnalyzer from '@/components/insights/LifestyleRoutineAnalyzer';
+import PrivacyConsent from '@/components/privacy/PrivacyConsent';
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [showFoodLog, setShowFoodLog] = useState(false);
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
   const queryClient = useQueryClient();
   const today = moment().format('YYYY-MM-DD');
   const navigate = useNavigate();
@@ -62,6 +64,8 @@ export default function Home() {
   useEffect(() => {
     if (!profileLoading && (!profile || profile.length === 0)) {
       navigate(createPageUrl('Onboarding'));
+    } else if (!profileLoading && profile?.[0] && !profile[0].consent_given_at) {
+      setShowConsent(true);
     }
   }, [profile, profileLoading, navigate]);
 
@@ -277,6 +281,12 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Privacy Consent */}
+        <PrivacyConsent 
+          open={showConsent}
+          onComplete={() => setShowConsent(false)}
+        />
 
         {/* Quick Log Dialogs */}
         <Dialog open={showFoodLog} onOpenChange={setShowFoodLog}>
