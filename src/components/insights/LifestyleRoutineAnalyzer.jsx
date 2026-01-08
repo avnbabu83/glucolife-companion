@@ -132,10 +132,17 @@ export default function LifestyleRoutineAnalyzer() {
 
         "${routine}"
         
+        User Profile:
+        - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
+        - Dietary Preference: ${userProfile?.dietary_preference || 'omnivore'}
+        ${userProfile?.allergies?.length > 0 ? `- Allergies: ${userProfile.allergies.join(', ')}` : ''}
+        
+        IMPORTANT: Respect the dietary preference strictly. If vegetarian/vegan, do NOT suggest any meat, poultry, fish, or animal products.
+        
         Provide:
         1. Schedule breakdown (extract times, activities, and meals)
         2. Risk factors for diabetes management
-        3. Specific meal timing recommendations
+        3. Specific meal timing recommendations (respecting dietary preference)
         4. Exercise opportunities within their schedule
         5. Priority changes that fit their lifestyle
         
