@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from '@tanstack/react-query';
 import moment from 'moment';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertCircle, CheckCircle, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp, Sparkles, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function NutritionComparison({ dateRange = 7 }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [insights, setInsights] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
 
   const startDate = moment().subtract(dateRange, 'days').format('YYYY-MM-DD');
   
@@ -31,10 +32,8 @@ export default function NutritionComparison({ dateRange = 7 }) {
 
   const userProfile = profile?.[0];
 
-  // Filter to only last 7 days
-  const recentMeals = mealPlans.filter(m => 
-    moment(m.date).isBetween(moment().subtract(dateRange, 'days'), moment(), null, '[]')
-  );
+  // Filter meals for selected date only
+  const recentMeals = mealPlans.filter(m => m.date === selectedDate);
   
   // ALL meals represent the plan (both completed and incomplete)
   const allPlannedMeals = recentMeals;
@@ -53,24 +52,21 @@ export default function NutritionComparison({ dateRange = 7 }) {
   const plannedTotals = calculateTotals(allPlannedMeals);
   const eatenTotals = calculateTotals(eatenMeals);
 
-  // Calculate daily averages
-  const daysWithPlannedMeals = new Set(allPlannedMeals.map(m => m.date)).size || 1;
-  const daysWithEatenMeals = new Set(eatenMeals.map(m => m.date)).size || 1;
-
+  // No averaging needed - showing single day totals
   const plannedDailyAvg = {
-    calories: Math.round(plannedTotals.calories / daysWithPlannedMeals),
-    carbs: Math.round(plannedTotals.carbs / daysWithPlannedMeals),
-    protein: Math.round(plannedTotals.protein / daysWithPlannedMeals),
-    fat: Math.round(plannedTotals.fat / daysWithPlannedMeals),
-    fiber: Math.round(plannedTotals.fiber / daysWithPlannedMeals)
+    calories: Math.round(plannedTotals.calories),
+    carbs: Math.round(plannedTotals.carbs),
+    protein: Math.round(plannedTotals.protein),
+    fat: Math.round(plannedTotals.fat),
+    fiber: Math.round(plannedTotals.fiber)
   };
 
   const eatenDailyAvg = {
-    calories: Math.round(eatenTotals.calories / daysWithEatenMeals),
-    carbs: Math.round(eatenTotals.carbs / daysWithEatenMeals),
-    protein: Math.round(eatenTotals.protein / daysWithEatenMeals),
-    fat: Math.round(eatenTotals.fat / daysWithEatenMeals),
-    fiber: Math.round(eatenTotals.fiber / daysWithEatenMeals)
+    calories: Math.round(eatenTotals.calories),
+    carbs: Math.round(eatenTotals.carbs),
+    protein: Math.round(eatenTotals.protein),
+    fat: Math.round(eatenTotals.fat),
+    fiber: Math.round(eatenTotals.fiber)
   };
 
   const comparisonData = [
@@ -147,11 +143,25 @@ export default function NutritionComparison({ dateRange = 7 }) {
     ? Math.round((eatenMeals.length / allPlannedMeals.length) * 100)
     : 0;
 
+  const goToPrevDay = () => {
+    setSelectedDate(moment(selectedDate).subtract(1, 'day').format('YYYY-MM-DD'));
+    setInsights(null);
+  };
+
+  const goToNextDay = () => {
+    if (moment(selectedDate).isBefore(moment(), 'day')) {
+      setSelectedDate(moment(selectedDate).add(1, 'day').format('YYYY-MM-DD'));
+      setInsights(null);
+    }
+  };
+
+  const isToday = moment(selectedDate).isSame(moment(), 'day');
+
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Nutrition: Planned vs Actual (Daily Avg)</CardTitle>
+        <div className="flex items-center justify-between mb-3">
+          <CardTitle className="text-lg">Nutrition: Planned vs Actual</CardTitle>
           <Button 
             onClick={analyzeAdherence}
             disabled={analyzing || eatenMeals.length === 0}
@@ -164,6 +174,31 @@ export default function NutritionComparison({ dateRange = 7 }) {
               <Sparkles className="w-4 h-4 mr-2" />
             )}
             Analyze
+          </Button>
+        </div>
+        
+        {/* Date Navigation */}
+        <div className="flex items-center justify-between bg-slate-50 rounded-lg p-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={goToPrevDay}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="text-center">
+            <p className="font-semibold text-slate-800">
+              {isToday ? 'Today' : moment(selectedDate).format('MMM D, YYYY')}
+            </p>
+            <p className="text-xs text-slate-500">{moment(selectedDate).format('dddd')}</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={goToNextDay}
+            disabled={isToday}
+          >
+            <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </CardHeader>

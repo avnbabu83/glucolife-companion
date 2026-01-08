@@ -28,6 +28,7 @@ import NutritionComparison from '@/components/insights/NutritionComparison';
 import GlucoseTrendAnalysis from '@/components/insights/GlucoseTrendAnalysis';
 import LifestyleRoutineAnalyzer from '@/components/insights/LifestyleRoutineAnalyzer';
 import PrivacyConsent from '@/components/privacy/PrivacyConsent';
+import DailyGlucoseTrendNotification from '@/components/insights/DailyGlucoseTrendNotification';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -190,6 +191,9 @@ export default function Home() {
             Sign Out
           </Button>
         </div>
+
+        {/* Daily Glucose Trend Notification */}
+        <DailyGlucoseTrendNotification />
 
         {/* Quick Log Buttons */}
         <div className="grid grid-cols-2 gap-3">
