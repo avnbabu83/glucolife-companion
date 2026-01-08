@@ -88,35 +88,46 @@ export default function Meals() {
   };
 
   const handlePlanGenerated = async (mealPlans) => {
-    // Collect all dates that will be affected by the new plan
-    const datesToClear = [];
-    mealPlans.forEach((day, dayIndex) => {
-      const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
-      datesToClear.push(date);
-    });
+    try {
+      // Collect all dates that will be affected by the new plan
+      const datesToClear = [];
+      mealPlans.forEach((day, dayIndex) => {
+        const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
+        datesToClear.push(date);
+      });
 
-    // Delete existing incomplete meals for these dates
-    const existingMealsQuery = await base44.entities.MealPlan.list('-date', 500);
-    const mealsToDelete = existingMealsQuery.filter(m => 
-      datesToClear.includes(m.date) && !m.is_completed
-    );
-    
-    // Delete old incomplete meals
-    await Promise.all(mealsToDelete.map(m => base44.entities.MealPlan.delete(m.id)));
+      // Fetch ALL existing meals for these dates (both completed and incomplete)
+      const existingMealsQuery = await base44.entities.MealPlan.list('-date', 1000);
+      const mealsToDelete = existingMealsQuery.filter(m => 
+        datesToClear.includes(m.date) && !m.is_completed
+      );
+      
+      // Delete old incomplete meals first
+      if (mealsToDelete.length > 0) {
+        await Promise.all(mealsToDelete.map(m => base44.entities.MealPlan.delete(m.id)));
+      }
 
-    // Create new meals
-    const allMeals = [];
-    mealPlans.forEach((day, dayIndex) => {
-      const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
-      day.meals.forEach(meal => {
-        allMeals.push({
-          ...meal,
-          date,
-          is_completed: false
+      // Small delay to ensure deletions are processed
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Create new meals
+      const allMeals = [];
+      mealPlans.forEach((day, dayIndex) => {
+        const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
+        day.meals.forEach(meal => {
+          allMeals.push({
+            ...meal,
+            date,
+            is_completed: false
+          });
         });
       });
-    });
-    createMealsMutation.mutate(allMeals);
+      
+      createMealsMutation.mutate(allMeals);
+    } catch (error) {
+      console.error('Error handling plan generation:', error);
+      toast.error('Failed to generate meal plan');
+    }
   };
 
   const handleFoodSubmit = (data) => {
@@ -174,23 +185,9 @@ export default function Meals() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
-          <div className="flex gap-2">
-            {meals.filter(m => !m.is_completed).length > 0 && (
-              <Button 
-                onClick={() => {
-                  if (confirm('Clear all unlogged meals for this day?')) {
-                    clearUnloggedMutation.mutate();
-                  }
-                }}
-                variant="outline"
-                size="sm"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear Unlogged
-              </Button>
-            )}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
             {meals.length > 0 && (
               <Button 
                 onClick={exportMealPlan}
@@ -200,9 +197,12 @@ export default function Meals() {
                 <Download className="w-4 h-4" />
               </Button>
             )}
+          </div>
+          
+          <div className="flex gap-2 flex-wrap">
             <Button 
               onClick={() => setShowFoodLog(true)}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none"
             >
               <Utensils className="w-4 h-4 mr-2" />
               Log Food
@@ -210,11 +210,28 @@ export default function Meals() {
             <Button 
               onClick={() => setShowGenerator(!showGenerator)}
               variant="outline"
+              className="flex-1 sm:flex-none"
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Generate
             </Button>
           </div>
+
+          {meals.filter(m => !m.is_completed).length > 0 && (
+            <Button 
+              onClick={() => {
+                if (confirm('Clear all unlogged meals for this day?')) {
+                  clearUnloggedMutation.mutate();
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear Unlogged Meals
+            </Button>
+          )}
         </div>
 
         {/* AI Generator */}
