@@ -76,6 +76,23 @@ export default function Meals() {
   };
 
   const handlePlanGenerated = async (mealPlans) => {
+    // Collect all dates that will be affected by the new plan
+    const datesToClear = [];
+    mealPlans.forEach((day, dayIndex) => {
+      const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
+      datesToClear.push(date);
+    });
+
+    // Delete existing incomplete meals for these dates
+    const existingMealsQuery = await base44.entities.MealPlan.list('-date', 500);
+    const mealsToDelete = existingMealsQuery.filter(m => 
+      datesToClear.includes(m.date) && !m.is_completed
+    );
+    
+    // Delete old incomplete meals
+    await Promise.all(mealsToDelete.map(m => base44.entities.MealPlan.delete(m.id)));
+
+    // Create new meals
     const allMeals = [];
     mealPlans.forEach((day, dayIndex) => {
       const date = moment(selectedDate).add(dayIndex, 'days').format('YYYY-MM-DD');
