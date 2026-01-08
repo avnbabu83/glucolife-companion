@@ -284,35 +284,25 @@ export default function Exercise() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
-          <div className="flex gap-2 flex-wrap">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
             {exercises.length > 0 && (
-              <>
-                <Button 
-                  onClick={() => {
-                    if (confirm('Clear all exercises from your plan?')) {
-                      clearUnloggedMutation.mutate();
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={exportExercisePlan}
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-              </>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={exportExercisePlan}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
             )}
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline"
               onClick={() => setShowHealthDialog(true)}
+              className="flex-1 sm:flex-none"
             >
               <Smartphone className="w-4 h-4 mr-2" />
               Health App
@@ -321,6 +311,7 @@ export default function Exercise() {
               variant="outline"
               onClick={generateExercisePlan}
               disabled={generating}
+              className="flex-1 sm:flex-none"
             >
               {generating ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -329,13 +320,31 @@ export default function Exercise() {
               )}
               Generate
             </Button>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button className="bg-violet-600 hover:bg-violet-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Exercise
-                </Button>
-              </DialogTrigger>
+          </div>
+
+          {exercises.length > 0 && (
+            <Button 
+              onClick={() => {
+                if (confirm('Clear all exercises from your plan?')) {
+                  clearUnloggedMutation.mutate();
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear All Exercises
+            </Button>
+          )}
+
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-violet-600 hover:bg-violet-700 w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Exercise
+              </Button>
+            </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add Exercise</DialogTitle>
@@ -497,8 +506,7 @@ export default function Exercise() {
                   </Button>
                 </div>
               </DialogContent>
-            </Dialog>
-          </div>
+          </Dialog>
         </div>
 
         {/* Weather Toggle */}
@@ -557,17 +565,19 @@ export default function Exercise() {
                   <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ {ex.precautions}</p>
                 </div>
               ))}
-              <div className="flex gap-3 pt-4">
-                <Button onClick={acceptExercises} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+              <div className="space-y-2 pt-4">
+                <Button onClick={acceptExercises} className="w-full bg-emerald-600 hover:bg-emerald-700">
                   Accept & Replace All
                 </Button>
-                <Button onClick={generateExercisePlan} variant="outline" className="flex-1" disabled={generating}>
-                  {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  Generate New
-                </Button>
-                <Button onClick={() => setPreviewExercises(null)} variant="outline">
-                  Cancel
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={generateExercisePlan} variant="outline" className="flex-1" disabled={generating}>
+                    {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    Generate New
+                  </Button>
+                  <Button onClick={() => setPreviewExercises(null)} variant="outline" className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

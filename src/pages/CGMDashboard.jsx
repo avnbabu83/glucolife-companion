@@ -353,12 +353,12 @@ export default function CGMDashboard() {
         </div>
 
         <Tabs defaultValue="chart" className="space-y-6">
-          <TabsList className="bg-white shadow-sm">
-            <TabsTrigger value="chart">24h Chart</TabsTrigger>
+          <TabsList className="bg-white shadow-sm grid grid-cols-3 sm:grid-cols-5 w-full">
+            <TabsTrigger value="chart">Chart</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-            <TabsTrigger value="log">Quick Log</TabsTrigger>
-            <TabsTrigger value="reminders">Reminders</TabsTrigger>
+            <TabsTrigger value="manual">Manual</TabsTrigger>
+            <TabsTrigger value="log">Log</TabsTrigger>
+            <TabsTrigger value="reminders">Alerts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="chart">
