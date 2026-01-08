@@ -237,10 +237,13 @@ export default function Exercise() {
       }
       
       // Small delay to ensure deletions are processed
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Invalidate to refresh the list
       await queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      
+      // Wait a bit more for the UI to reflect the deletion
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Create new exercises
       const exercisesToCreate = previewExercises.map(e => ({
@@ -255,12 +258,8 @@ export default function Exercise() {
         is_active: true
       }));
       
-      await base44.entities.ExercisePlan.bulkCreate(exercisesToCreate);
-      
-      // Refresh queries
-      await queryClient.invalidateQueries({ queryKey: ['exercises'] });
-      
-      toast.success('Exercise plan updated successfully!');
+      // Use the mutation
+      bulkCreateExercisesMutation.mutate(exercisesToCreate);
       setPreviewExercises(null);
     } catch (error) {
       console.error('Error accepting exercises:', error);
