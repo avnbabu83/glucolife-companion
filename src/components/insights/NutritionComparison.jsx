@@ -87,7 +87,7 @@ export default function NutritionComparison({ dateRange = 7 }) {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Analyze nutrition adherence for a person with ${userProfile?.diabetes_type || 'type 2'} diabetes:
         
-        Planned Nutrition (${plannedMeals.length} meals):
+        Planned Nutrition (${allPlannedMeals.length} meals):
         - Calories: ${plannedTotals.calories}
         - Carbs: ${plannedTotals.carbs}g
         - Protein: ${plannedTotals.protein}g
