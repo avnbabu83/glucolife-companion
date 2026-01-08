@@ -8,7 +8,7 @@ import { Sparkles, Loader2, Calendar, Info } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import moment from 'moment';
-import { calculateDailyCalories, getCalorieDistribution } from '@/components/utils/calorieCalculator';
+import { calculateDailyCalories, getCalorieDistribution } from '@/components/utils/calorieCalculator.js';
 
 export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
   const [generating, setGenerating] = useState(false);
