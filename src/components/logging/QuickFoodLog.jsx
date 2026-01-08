@@ -281,11 +281,10 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
             ) : (
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
                 <Camera className="w-8 h-8 text-slate-400 mb-2" />
-                <span className="text-sm text-slate-500">Click to capture food image</span>
+                <span className="text-sm text-slate-500">Take photo or upload from gallery</span>
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="hidden"
                   onChange={handleImageUpload}
                   disabled={generating}

@@ -213,12 +213,15 @@ export default function Exercise() {
         - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
         - Activity Level: ${userProfile?.activity_level || 'moderately_active'}
         - Age: ${userProfile?.age || 'adult'}${weatherInfo}
-        
+
         Provide 5-7 exercises suitable for diabetics, with variety across the week.
         Focus on low-impact exercises like walking, swimming, yoga, cycling, and stretching.
         Include precautions for blood sugar management during exercise.
         Consider exercises that help with insulin sensitivity.
-        Make exercises realistic and easy to follow.`,
+        Make exercises realistic and easy to follow.
+
+        IMPORTANT: For each exercise, provide a relevant YouTube tutorial URL that shows how to properly perform the exercise.
+        Use real, existing YouTube URLs for beginner-friendly diabetes exercise tutorials.`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -234,7 +237,8 @@ export default function Exercise() {
                   scheduled_days: { type: "array", items: { type: "string", enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] } },
                   scheduled_time: { type: "string" },
                   calories_burned: { type: "number" },
-                  precautions: { type: "string" }
+                  precautions: { type: "string" },
+                  video_url: { type: "string" }
                 }
               }
             }
@@ -284,6 +288,7 @@ export default function Exercise() {
         scheduled_time: e.scheduled_time || '07:00',
         calories_burned: e.calories_burned || 0,
         precautions: e.precautions || '',
+        video_url: e.video_url || '',
         is_active: true
       }));
       

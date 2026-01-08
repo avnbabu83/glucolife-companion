@@ -1,3 +1,4 @@
+import AdminUsers from './pages/AdminUsers';
 import CGMDashboard from './pages/CGMDashboard';
 import Exercise from './pages/Exercise';
 import Glucose from './pages/Glucose';
@@ -10,11 +11,11 @@ import Medications from './pages/Medications';
 import Onboarding from './pages/Onboarding';
 import Profile from './pages/Profile';
 import Sleep from './pages/Sleep';
-import AdminUsers from './pages/AdminUsers';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AdminUsers": AdminUsers,
     "CGMDashboard": CGMDashboard,
     "Exercise": Exercise,
     "Glucose": Glucose,
@@ -27,7 +28,6 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Profile": Profile,
     "Sleep": Sleep,
-    "AdminUsers": AdminUsers,
 }
 
 export const pagesConfig = {

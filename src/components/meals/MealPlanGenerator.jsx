@@ -36,6 +36,18 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
+      const weeklyBudget = userProfile?.weekly_food_budget || null;
+      const budgetConstraint = weeklyBudget 
+        ? `\n\nIMPORTANT BUDGET CONSTRAINT:
+        - Weekly food budget: $${weeklyBudget}
+        - Daily budget: $${(weeklyBudget / 7).toFixed(2)}
+        - Focus on affordable, budget-friendly ingredients
+        - Prioritize seasonal produce, legumes, beans, eggs, and affordable proteins
+        - Avoid expensive ingredients like salmon, organic specialty items unless budget allows
+        - Suggest bulk buying options and meal prep friendly recipes
+        - Make meals filling and nutritious within budget`
+        : '';
+
       const dietaryDetails = userProfile?.dietary_preference === 'indian_vegetarian'
         ? 'Indian vegetarian meals with dal, sabzi, roti, rice. Use spices like turmeric, cumin.'
         : userProfile?.dietary_preference === 'vegetarian'
@@ -67,15 +79,15 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Generate a ${selectedDays}-day meal plan for someone with ${userProfile?.diabetes_type || 'type 2'} diabetes.
-        
+
         User Profile:
         - Age: ${userProfile?.age || 'N/A'}, Weight: ${userProfile?.weight || 'N/A'}kg, Height: ${userProfile?.height || 'N/A'}cm
         - Activity Level: ${userProfile?.activity_level || 'moderate'}
         - Daily calorie target: ${calorieTarget} kcal (personalized based on their BMR and activity)
         - Target macros: ${macroDistribution.carbs_grams}g carbs, ${macroDistribution.protein_grams}g protein, ${macroDistribution.fat_grams}g fat, ${macroDistribution.fiber_grams}g fiber
         - Dietary preference: ${userProfile?.dietary_preference || 'balanced'} (${dietaryDetails})
-        - Glucose target: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL${glucoseInsight}
-        
+        - Glucose target: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL${glucoseInsight}${budgetConstraint}
+
         Requirements:
         - Focus on low glycemic index foods
         - 3 main meals + 2-3 snacks per day
@@ -154,6 +166,15 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
             <div className="text-xs text-blue-700">
               <p className="font-medium">Personalized for you</p>
               <p>Based on your age ({userProfile.age}), weight ({userProfile.weight}kg), and {userProfile.activity_level} activity level</p>
+            </div>
+          </div>
+        )}
+        {userProfile?.weekly_food_budget && (
+          <div className="p-3 bg-green-50 rounded-lg flex items-start gap-2">
+            <Info className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-green-700">
+              <p className="font-medium">Budget-Friendly Meals</p>
+              <p>Weekly budget: ${userProfile.weekly_food_budget} (${(userProfile.weekly_food_budget / 7).toFixed(2)}/day)</p>
             </div>
           </div>
         )}
