@@ -353,9 +353,8 @@ export default function CGMDashboard() {
         </div>
 
         <Tabs defaultValue="chart" className="space-y-6">
-          <TabsList className="bg-white shadow-sm grid grid-cols-3 sm:grid-cols-5 w-full">
+          <TabsList className="bg-white shadow-sm grid grid-cols-2 sm:grid-cols-4 w-full">
             <TabsTrigger value="chart">Chart</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="manual">Manual</TabsTrigger>
             <TabsTrigger value="log">Log</TabsTrigger>
             <TabsTrigger value="reminders">Alerts</TabsTrigger>
@@ -457,120 +456,7 @@ export default function CGMDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="insights">
-            <div className="grid gap-6">
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-lg">Pattern Analysis</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Data Gap Warning */}
-                  {stats.hasGaps && (
-                    <div className="p-4 bg-orange-50 rounded-xl border-2 border-orange-200">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-orange-800">Limited Data Available</h4>
-                          <p className="text-sm text-orange-700 mt-1">
-                            {stats.gapHours && stats.gapHours > 3 ? (
-                              <>No CGM data for the past {stats.gapHours} hours. Sync your device or log readings manually for accurate insights.</>
-                            ) : (
-                              <>Only {stats.total} readings in the last 24 hours. More frequent monitoring is recommended for better insights.</>
-                            )}
-                          </p>
-                          {stats.total < 6 && (
-                            <div className="mt-3 space-y-1 text-sm text-orange-700">
-                              <p className="font-medium">To improve insights, please track:</p>
-                              <ul className="list-disc ml-4 space-y-1">
-                                <li>Fasting glucose (morning)</li>
-                                <li>Pre-meal readings (before each meal)</li>
-                                <li>Post-meal readings (2 hours after eating)</li>
-                                <li>Bedtime glucose</li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Show insights only if we have sufficient data */}
-                  {stats.total >= 6 ? (
-                    <>
-                      <div className="p-4 bg-emerald-50 rounded-xl">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
-                          <div>
-                            <h4 className="font-semibold text-emerald-800">
-                              {stats.timeInRange >= 70 ? 'Excellent Control' : 'Good Progress'}
-                            </h4>
-                            <p className="text-sm text-emerald-700 mt-1">
-                              You're spending {stats.timeInRange}% of time in target range 
-                              {stats.hasGaps && ' (based on available data)'}. 
-                              {stats.timeInRange >= 70 
-                                ? ' Great job maintaining stable glucose levels!' 
-                                : ' Keep monitoring and following your plan.'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {stats.high > stats.total * 0.25 && (
-                        <div className="p-4 bg-rose-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-rose-600 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-rose-800">High Readings Alert</h4>
-                              <p className="text-sm text-rose-700 mt-1">
-                                {Math.round((stats.high / stats.total) * 100)}% of readings are above target. 
-                                Consider reviewing your meal plan and medication timing.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {stats.low > stats.total * 0.1 && (
-                        <div className="p-4 bg-amber-50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-amber-800">Low Readings Alert</h4>
-                              <p className="text-sm text-amber-700 mt-1">
-                                {Math.round((stats.low / stats.total) * 100)}% of readings are below target. 
-                                Keep fast-acting glucose nearby and adjust medication as needed.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="p-4 bg-blue-50 rounded-xl">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-semibold text-blue-800">Need More Data</h4>
-                          <p className="text-sm text-blue-700 mt-1">
-                            We need more glucose readings to provide personalized insights. 
-                            Try to log at least 6-8 readings per day for meaningful patterns.
-                          </p>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="mt-3"
-                            onClick={() => window.location.href = '/Glucose'}
-                          >
-                            Log Glucose Reading
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           <TabsContent value="reminders">
             <Card className="border-0 shadow-sm">
