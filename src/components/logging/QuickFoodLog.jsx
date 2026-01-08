@@ -56,6 +56,16 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check camera permissions on mobile
+    if (e.target.capture && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch (error) {
+        toast.error('Camera permission denied. Please enable camera access in your device settings.');
+        return;
+      }
+    }
+
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {

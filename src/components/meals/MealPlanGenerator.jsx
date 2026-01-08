@@ -149,10 +149,15 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
         {/* Preview Generated Meals */}
         {previewMeals && (
           <div className="mt-6 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-500">
-            <h4 className="font-semibold text-emerald-800 mb-4 flex items-center gap-2">
+            <h4 className="font-semibold text-emerald-800 mb-2 flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
               {selectedDays}-Day Meal Plan Preview
             </h4>
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 mb-4">
+              <p className="text-xs text-amber-800">
+                ⚠️ <strong>Note:</strong> Accepting this plan will replace all incomplete meals for the selected dates, including any lifestyle analyzer suggestions. Completed/logged meals will be preserved.
+              </p>
+            </div>
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {previewMeals.map((day, dayIdx) => (
                 <div key={dayIdx} className="bg-white p-3 rounded-lg">
