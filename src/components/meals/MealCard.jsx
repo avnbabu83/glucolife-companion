@@ -26,15 +26,23 @@ export default function MealCard({ meal, onComplete, onViewDetails, onDelete }) 
     <Card 
       className={cn(
         "p-4 border-0 shadow-sm transition-all hover:shadow-md cursor-pointer",
-        meal.is_completed && "opacity-60"
+        meal.is_completed && "opacity-60",
+        isFromAnalyzer && "border-2 border-emerald-300 bg-emerald-50/30"
       )}
       onClick={() => onViewDetails?.(meal)}
     >
       <div className="flex items-start justify-between mb-3">
         <div>
-          <Badge variant="outline" className={cn("text-xs mb-2", mealTypeColors[meal.meal_type])}>
-            {meal.meal_type?.replace('_', ' ')}
-          </Badge>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="outline" className={cn("text-xs", mealTypeColors[meal.meal_type])}>
+              {meal.meal_type?.replace('_', ' ')}
+            </Badge>
+            {isFromAnalyzer && (
+              <Badge className="bg-emerald-200 text-emerald-800 text-xs">
+                From Analyzer
+              </Badge>
+            )}
+          </div>
           <h3 className={cn(
             "font-semibold text-slate-800",
             meal.is_completed && "line-through"

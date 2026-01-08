@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ExerciseCard({ exercise, isCompleted, onComplete }) {
+  const isFromAnalyzer = exercise.source === 'lifestyle_analyzer';
   const exerciseIcons = {
     walking: Footprints,
     jogging: Footprints,
@@ -42,7 +43,8 @@ export default function ExerciseCard({ exercise, isCompleted, onComplete }) {
   return (
     <Card className={cn(
       "p-4 border-0 shadow-sm transition-all hover:shadow-md",
-      isCompleted && "opacity-60"
+      isCompleted && "opacity-60",
+      isFromAnalyzer && "border-2 border-violet-300 bg-violet-50/30"
     )}>
       <div className="flex items-start gap-4">
         <div className={cn(
@@ -58,12 +60,19 @@ export default function ExerciseCard({ exercise, isCompleted, onComplete }) {
         <div className="flex-1">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className={cn(
-                "font-semibold text-slate-800",
-                isCompleted && "line-through"
-              )}>
-                {exercise.name}
-              </h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className={cn(
+                  "font-semibold text-slate-800",
+                  isCompleted && "line-through"
+                )}>
+                  {exercise.name}
+                </h3>
+                {isFromAnalyzer && (
+                  <Badge className="bg-violet-200 text-violet-800 text-xs">
+                    From Analyzer
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-slate-500 capitalize">
                 {exercise.exercise_type?.replace('_', ' ')}
               </p>
