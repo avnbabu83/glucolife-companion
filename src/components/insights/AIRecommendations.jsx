@@ -21,33 +21,55 @@ export default function AIRecommendations({
       const sleep = await base44.entities.SleepLog.list('-date', 7);
       const activity = await base44.entities.ActivityData.list('-date', 7);
 
-      const prompt = `Analyze this comprehensive diabetes and health data to provide holistic personalized recommendations:
+      // Calculate glucose statistics
+      const avgGlucose = glucoseReadings.length > 0 
+        ? Math.round(glucoseReadings.reduce((sum, r) => sum + r.reading, 0) / glucoseReadings.length)
+        : null;
+      
+      const timeInRange = glucoseReadings.length > 0
+        ? Math.round((glucoseReadings.filter(r => 
+            r.reading >= (userProfile?.target_glucose_min || 70) && 
+            r.reading <= (userProfile?.target_glucose_max || 140)
+          ).length / glucoseReadings.length) * 100)
+        : null;
+
+      const prompt = `Analyze this comprehensive diabetes and health data to provide highly personalized, actionable recommendations:
 
 User Profile:
 - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
+- Age: ${userProfile?.age}, Weight: ${userProfile?.weight}kg, Height: ${userProfile?.height}cm
+- BMI: ${userProfile?.weight && userProfile?.height ? (userProfile.weight / Math.pow(userProfile.height/100, 2)).toFixed(1) : 'N/A'}
+- Activity Level: ${userProfile?.activity_level || 'moderate'}
 - Dietary Preference: ${userProfile?.dietary_preference || 'omnivore'}
 - Target Glucose Range: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL
-- Wearable Connected: ${userProfile?.wearable_device || 'none'}
+- Current Average Glucose: ${avgGlucose || 'N/A'} mg/dL
+- Time in Range: ${timeInRange || 'N/A'}%
 
 Recent Glucose Readings (last 7 days):
-${glucoseReadings.slice(0, 20).map(r => `- ${r.reading} mg/dL at ${r.reading_time} (${r.context || 'random'})`).join('\n')}
+${glucoseReadings.slice(0, 20).map(r => `- ${r.reading} mg/dL at ${r.reading_time} (${r.context || 'random'}) - ${r.trend || 'stable'}`).join('\n')}
 
-Recent Meals:
-${mealHistory.slice(0, 10).map(m => `- ${m.meal_name} (${m.meal_type}): ${m.carbs}g carbs, GI: ${m.glycemic_index}`).join('\n')}
+Recent Meals (with glucose context):
+${mealHistory.slice(0, 10).map(m => `- ${m.meal_name} (${m.meal_type}): ${m.carbs}g carbs, ${m.calories} cal, GI: ${m.glycemic_index} - ${m.is_completed ? 'Logged' : 'Planned'}`).join('\n')}
+
+Recent Exercise:
+${exerciseLogs.slice(0, 7).map(e => `- ${e.exercise_name}: ${e.actual_duration}min, pre-glucose: ${e.pre_exercise_glucose || 'N/A'}, post-glucose: ${e.post_exercise_glucose || 'N/A'}, felt: ${e.how_felt || 'N/A'}`).join('\n')}
 
 Sleep Data (last 7 days):
-${sleep.map(s => `- ${s.date}: ${s.total_hours}hrs (${s.quality}), deep: ${s.deep_sleep_minutes || 'N/A'}min, morning glucose: ${s.morning_glucose || 'N/A'}`).join('\n')}
+${sleep.map(s => `- ${s.date}: ${s.total_hours}hrs (${s.quality}), deep: ${s.deep_sleep_minutes || 'N/A'}min, morning glucose: ${s.morning_glucose || 'N/A'} mg/dL`).join('\n')}
 
 Activity Data (last 7 days):
-${activity.map(a => `- ${a.date}: ${a.steps || 0} steps, ${a.active_minutes || 0}min active, ${a.calories_burned || 0} cal, avg HR: ${a.heart_rate_avg || 'N/A'}`).join('\n')}
+${activity.map(a => `- ${a.date}: ${a.steps || 0} steps, ${a.active_minutes || 0}min active, ${a.calories_burned || 0} cal, avg HR: ${a.heart_rate_avg || 'N/A'} bpm`).join('\n')}
 
-Analyze correlations between:
-- Sleep quality/duration and morning glucose levels
-- Activity levels and glucose stability throughout the day
-- Heart rate patterns during activities and glucose trends
-- Overall lifestyle balance impact on diabetes control
+CRITICAL ANALYSIS REQUIRED:
+1. Identify specific glucose patterns (spikes, drops, trends at certain times)
+2. Correlate meals with glucose responses - which foods cause spikes?
+3. Analyze sleep quality impact on glucose control
+4. Exercise effectiveness - pre/post glucose changes
+5. Activity level vs glucose stability
+6. Heart rate patterns during activities
+7. Overall lifestyle balance and diabetes management effectiveness
 
-Provide comprehensive insights including patterns in glucose, sleep, activity, and diet with actionable recommendations.`;
+Provide SPECIFIC, DATA-DRIVEN recommendations based on their actual readings, not generic advice. Reference specific glucose values, meal timings, and patterns you observe.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
