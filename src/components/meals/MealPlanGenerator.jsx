@@ -165,17 +165,19 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
                 </div>
               ))}
             </div>
-            <div className="flex gap-3 mt-4">
-              <Button onClick={acceptMealPlan} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+            <div className="space-y-2 mt-4">
+              <Button onClick={acceptMealPlan} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 Accept & Replace All
               </Button>
-              <Button onClick={handleGenerate} variant="outline" className="flex-1" disabled={generating}>
-                {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                Generate New
-              </Button>
-              <Button onClick={() => setPreviewMeals(null)} variant="outline">
-                Cancel
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleGenerate} variant="outline" className="flex-1" disabled={generating}>
+                  {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                  Generate New
+                </Button>
+                <Button onClick={() => setPreviewMeals(null)} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              </div>
             </div>
           </div>
         )}

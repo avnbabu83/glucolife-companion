@@ -221,18 +221,27 @@ export default function Exercise() {
 
   const acceptExercises = async () => {
     if (!previewExercises) return;
-    // Delete existing exercises
-    const existingIds = exercises.map(e => e.id);
-    for (const id of existingIds) {
-      await base44.entities.ExercisePlan.delete(id);
+    try {
+      // Delete existing exercises
+      const existingIds = exercises.map(e => e.id);
+      if (existingIds.length > 0) {
+        await Promise.all(existingIds.map(id => base44.entities.ExercisePlan.delete(id)));
+      }
+      
+      // Small delay to ensure deletions are processed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create new exercises
+      const exercisesToCreate = previewExercises.map(e => ({
+        ...e,
+        is_active: true
+      }));
+      bulkCreateExercisesMutation.mutate(exercisesToCreate);
+      setPreviewExercises(null);
+    } catch (error) {
+      console.error('Error accepting exercises:', error);
+      toast.error('Failed to update exercise plan');
     }
-    // Create new exercises
-    const exercisesToCreate = previewExercises.map(e => ({
-      ...e,
-      is_active: true
-    }));
-    bulkCreateExercisesMutation.mutate(exercisesToCreate);
-    setPreviewExercises(null);
   };
 
   const toggleDay = (day) => {
