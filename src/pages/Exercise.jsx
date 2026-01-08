@@ -202,7 +202,7 @@ export default function Exercise() {
                   exercise_type: { type: "string", enum: ["walking", "jogging", "cycling", "swimming", "yoga", "pilates", "strength_training", "stretching", "other"] },
                   duration_minutes: { type: "number" },
                   intensity: { type: "string", enum: ["low", "moderate", "high"] },
-                  scheduled_days: { type: "array", items: { type: "string" } },
+                  scheduled_days: { type: "array", items: { type: "string", enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] } },
                   scheduled_time: { type: "string" },
                   calories_burned: { type: "number" },
                   precautions: { type: "string" }
@@ -305,9 +305,21 @@ export default function Exercise() {
     toast.success('Exercise plan exported!');
   };
 
-  const todaysExercises = exercises.filter(e => 
-    e.is_active !== false && e.scheduled_days?.includes(currentDay)
-  );
+  const todaysExercises = exercises.filter(e => {
+    if (e.is_active === false || !e.scheduled_days) return false;
+    // Handle both abbreviated (Mon, Tue) and full names (Monday, Tuesday)
+    const dayMap = {
+      'Mon': ['Mon', 'Monday'],
+      'Tue': ['Tue', 'Tuesday'],
+      'Wed': ['Wed', 'Wednesday'],
+      'Thu': ['Thu', 'Thursday'],
+      'Fri': ['Fri', 'Friday'],
+      'Sat': ['Sat', 'Saturday'],
+      'Sun': ['Sun', 'Sunday']
+    };
+    const matchingDays = dayMap[currentDay] || [currentDay];
+    return e.scheduled_days.some(d => matchingDays.includes(d));
+  });
 
   const completedToday = todayLogs.filter(l => l.status === 'completed');
   const weeklyMinutes = weekLogs
@@ -735,8 +747,19 @@ export default function Exercise() {
 
           <TabsContent value="week" className="space-y-4">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+              // Handle both abbreviated (Mon, Tue) and full names (Monday, Tuesday)
+              const dayMap = {
+                'Mon': ['Mon', 'Monday'],
+                'Tue': ['Tue', 'Tuesday'],
+                'Wed': ['Wed', 'Wednesday'],
+                'Thu': ['Thu', 'Thursday'],
+                'Fri': ['Fri', 'Friday'],
+                'Sat': ['Sat', 'Saturday'],
+                'Sun': ['Sun', 'Sunday']
+              };
+              const matchingDays = dayMap[day] || [day];
               const dayExercises = exercises.filter(e => 
-                e.is_active !== false && e.scheduled_days?.includes(day)
+                e.is_active !== false && e.scheduled_days?.some(d => matchingDays.includes(d))
               );
               const isToday = day === currentDay;
               
