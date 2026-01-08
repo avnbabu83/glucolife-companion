@@ -22,7 +22,8 @@ import {
   Clock,
   AlertTriangle,
   Smartphone,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -94,6 +95,21 @@ export default function Exercise() {
   const updateProfileMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.UserProfile.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
+  });
+
+  const deleteExerciseMutation = useMutation({
+    mutationFn: (id) => base44.entities.ExercisePlan.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
+  });
+
+  const clearUnloggedMutation = useMutation({
+    mutationFn: async () => {
+      await Promise.all(exercises.map(e => base44.entities.ExercisePlan.delete(e.id)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      toast.success('Cleared all exercises');
+    },
   });
 
   const resetForm = () => {
@@ -272,20 +288,34 @@ export default function Exercise() {
           <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
           <div className="flex gap-2 flex-wrap">
             {exercises.length > 0 && (
-              <Button 
-                variant="outline"
-                onClick={exportExercisePlan}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+              <>
+                <Button 
+                  onClick={() => {
+                    if (confirm('Clear all exercises from your plan?')) {
+                      clearUnloggedMutation.mutate();
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={exportExercisePlan}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </>
             )}
             <Button 
               variant="outline"
               onClick={() => setShowHealthDialog(true)}
             >
               <Smartphone className="w-4 h-4 mr-2" />
-              Connect Health App
+              Health App
             </Button>
             <Button 
               variant="outline"
@@ -297,7 +327,7 @@ export default function Exercise() {
               ) : (
                 <Sparkles className="w-4 h-4 mr-2" />
               )}
-              Generate Plan
+              Generate
             </Button>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -572,7 +602,7 @@ export default function Exercise() {
 
           <TabsContent value="today" className="space-y-6">
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <Card className="border-0 shadow-sm bg-violet-50">
                 <CardContent className="p-4 text-center">
                   <Dumbbell className="w-6 h-6 text-violet-600 mx-auto mb-2" />
