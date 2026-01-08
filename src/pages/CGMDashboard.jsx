@@ -386,6 +386,9 @@ export default function CGMDashboard() {
                           dataKey="time" 
                           tick={{ fontSize: 11, fill: '#94a3b8' }}
                           interval={Math.floor(chartData.length / 12)}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
                         />
                         <YAxis domain={[40, 300]} tick={{ fontSize: 11, fill: '#94a3b8' }} />
                         <Tooltip />
