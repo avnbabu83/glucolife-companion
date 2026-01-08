@@ -89,7 +89,10 @@ export default function Exercise() {
 
   const bulkCreateExercisesMutation = useMutation({
     mutationFn: (data) => base44.entities.ExercisePlan.bulkCreate(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      toast.success('Exercise plan created successfully!');
+    },
   });
 
   const updateProfileMutation = useMutation({

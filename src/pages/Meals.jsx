@@ -57,6 +57,7 @@ export default function Meals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
       setShowGenerator(false);
+      toast.success('Meal plan created successfully!');
     },
   });
 
