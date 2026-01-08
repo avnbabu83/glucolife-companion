@@ -17,7 +17,8 @@ import {
   CheckCircle,
   ArrowUp,
   ArrowDown,
-  Bell
+  Bell,
+  Plus
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import { cn } from "@/lib/utils";
 import GlucoseActionCard from '../components/cgm/GlucoseActionCard';
 import QuickFoodLog from '../components/logging/QuickFoodLog';
 import QuickWorkoutLog from '../components/logging/QuickWorkoutLog';
+import GlucoseEntryForm from '../components/glucose/GlucoseEntryForm';
 
 export default function CGMDashboard() {
   const [syncing, setSyncing] = useState(false);
@@ -53,6 +55,14 @@ export default function CGMDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
       toast.success('Workout logged');
+    },
+  });
+
+  const createGlucoseMutation = useMutation({
+    mutationFn: (data) => base44.entities.GlucoseReading.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allGlucoseReadings'] });
+      toast.success('Glucose reading logged');
     },
   });
 
@@ -151,19 +161,66 @@ export default function CGMDashboard() {
   if (!cgmConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-slate-800">Glucose Monitoring</h1>
+          </div>
+
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-8 text-center">
               <Activity className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-slate-800 mb-2">No CGM Connected</h2>
               <p className="text-slate-500 mb-6">
-                Connect your Freestyle Libre or Dexcom device to see real-time glucose monitoring
+                Connect your Freestyle Libre or Dexcom device to see real-time glucose monitoring, or log readings manually below
               </p>
               <Button onClick={() => window.location.href = '/Profile?tab=cgm'}>
                 Connect CGM Device
               </Button>
             </CardContent>
           </Card>
+
+          {/* Manual Glucose Entry */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Plus className="w-5 h-5 text-emerald-600" />
+                Manual Glucose Entry
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GlucoseEntryForm onSubmit={(data) => createGlucoseMutation.mutate(data)} />
+            </CardContent>
+          </Card>
+
+          {/* Recent Manual Readings */}
+          {readings.length > 0 && (
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Recent Readings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {readings.slice(0, 10).map((reading) => (
+                    <div key={reading.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className={cn("text-xl font-bold", getGlucoseColor(reading.reading))}>
+                          {reading.reading}
+                        </span>
+                        <span className="text-sm text-slate-500">mg/dL</span>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {reading.context?.replace('_', ' ') || reading.source}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-600">{moment(reading.date + ' ' + reading.reading_time).format('MMM D, h:mm A')}</p>
+                        <p className="text-xs text-slate-400">{moment(reading.date + ' ' + reading.reading_time).fromNow()}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
@@ -299,6 +356,7 @@ export default function CGMDashboard() {
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="chart">24h Chart</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
             <TabsTrigger value="log">Quick Log</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
           </TabsList>
@@ -366,6 +424,20 @@ export default function CGMDashboard() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="manual">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-emerald-600" />
+                  Log Glucose Reading
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GlucoseEntryForm onSubmit={(data) => createGlucoseMutation.mutate(data)} />
               </CardContent>
             </Card>
           </TabsContent>
