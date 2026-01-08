@@ -107,19 +107,19 @@ export default function NutritionComparison({ dateRange = 7 }) {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Analyze nutrition adherence for a person with ${userProfile?.diabetes_type || 'type 2'} diabetes:
         
-        Planned Nutrition (${allPlannedMeals.length} meals):
-        - Calories: ${plannedTotals.calories}
-        - Carbs: ${plannedTotals.carbs}g
-        - Protein: ${plannedTotals.protein}g
-        - Fat: ${plannedTotals.fat}g
-        - Fiber: ${plannedTotals.fiber}g
+        Planned Daily Average (${allPlannedMeals.length} meals over ${daysWithPlannedMeals} days):
+        - Calories: ${plannedDailyAvg.calories}
+        - Carbs: ${plannedDailyAvg.carbs}g
+        - Protein: ${plannedDailyAvg.protein}g
+        - Fat: ${plannedDailyAvg.fat}g
+        - Fiber: ${plannedDailyAvg.fiber}g
         
-        Actual Nutrition (${eatenMeals.length} meals):
-        - Calories: ${eatenTotals.calories}
-        - Carbs: ${eatenTotals.carbs}g
-        - Protein: ${eatenTotals.protein}g
-        - Fat: ${eatenTotals.fat}g
-        - Fiber: ${eatenTotals.fiber}g
+        Actual Daily Average (${eatenMeals.length} meals over ${daysWithEatenMeals} days):
+        - Calories: ${eatenDailyAvg.calories}
+        - Carbs: ${eatenDailyAvg.carbs}g
+        - Protein: ${eatenDailyAvg.protein}g
+        - Fat: ${eatenDailyAvg.fat}g
+        - Fiber: ${eatenDailyAvg.fiber}g
         
         Provide:
         1. Adherence percentage
