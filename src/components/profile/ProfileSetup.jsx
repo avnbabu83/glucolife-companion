@@ -11,6 +11,7 @@ export default function ProfileSetup({ profile, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     diabetes_type: profile?.diabetes_type || '',
     dietary_preference: profile?.dietary_preference || '',
+    gender: profile?.gender || '',
     age: profile?.age || '',
     weight: profile?.weight || '',
     height: profile?.height || '',
@@ -180,7 +181,21 @@ export default function ProfileSetup({ profile, onSave, isLoading }) {
           {/* Physical Stats */}
           <div className="space-y-4">
             <h3 className="font-semibold text-slate-700">Physical Information</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label>Gender</Label>
+                <Select value={formData.gender} onValueChange={(v) => handleChange('gender', v)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Age</Label>
                 <Input

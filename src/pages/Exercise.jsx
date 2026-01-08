@@ -239,7 +239,8 @@ export default function Exercise() {
         ...e,
         is_active: true
       }));
-      bulkCreateExercisesMutation.mutate(exercisesToCreate);
+      
+      await bulkCreateExercisesMutation.mutateAsync(exercisesToCreate);
       setPreviewExercises(null);
     } catch (error) {
       console.error('Error accepting exercises:', error);
