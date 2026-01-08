@@ -151,7 +151,7 @@ export default function NutritionComparison({ dateRange = 7 }) {
     <Card className="border-0 shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Nutrition: Planned vs Actual</CardTitle>
+          <CardTitle className="text-lg">Nutrition: Planned vs Actual (Daily Avg)</CardTitle>
           <Button 
             onClick={analyzeAdherence}
             disabled={analyzing || eatenMeals.length === 0}
