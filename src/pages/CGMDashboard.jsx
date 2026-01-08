@@ -18,7 +18,9 @@ import {
   ArrowUp,
   ArrowDown,
   Bell,
-  Plus
+  Plus,
+  Download,
+  FileText
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { toast } from "sonner";
@@ -140,6 +142,80 @@ export default function CGMDashboard() {
     }
   };
 
+  const exportToCSV = () => {
+    const csvContent = [
+      ['Date', 'Time', 'Reading (mg/dL)', 'Trend', 'Context', 'Source', 'Notes'],
+      ...readings.map(r => [
+        r.date,
+        r.reading_time,
+        r.reading,
+        r.trend || '',
+        r.context || '',
+        r.source || '',
+        r.notes || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `glucose-readings-${moment().format('YYYY-MM-DD')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    toast.success('Data exported to CSV');
+  };
+
+  const exportToPDF = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(20);
+      doc.text('Glucose Readings Report', 20, 20);
+
+      // Date and Stats
+      doc.setFontSize(10);
+      doc.text(`Generated: ${moment().format('MMMM D, YYYY h:mm A')}`, 20, 30);
+      doc.text(`Total Readings: ${stats.total}`, 20, 37);
+      doc.text(`Average: ${stats.average || '--'} mg/dL`, 20, 43);
+      doc.text(`Time in Range: ${stats.timeInRange}%`, 20, 49);
+      doc.text(`Target Range: ${targetMin}-${targetMax} mg/dL`, 20, 55);
+
+      // Table headers
+      doc.setFontSize(9);
+      doc.text('Date', 20, 70);
+      doc.text('Time', 50, 70);
+      doc.text('Reading', 80, 70);
+      doc.text('Trend', 110, 70);
+      doc.text('Context', 135, 70);
+
+      // Readings
+      let y = 80;
+      readings.slice(0, 50).forEach((reading) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(8);
+        doc.text(reading.date, 20, y);
+        doc.text(reading.reading_time, 50, y);
+        doc.text(`${reading.reading} mg/dL`, 80, y);
+        doc.text(reading.trend || '--', 110, y);
+        doc.text(reading.context?.replace('_', ' ') || '--', 135, y);
+        y += 7;
+      });
+
+      doc.save(`glucose-report-${moment().format('YYYY-MM-DD')}.pdf`);
+      toast.success('Report exported to PDF');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    }
+  };
+
   if (!cgmConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -217,14 +293,24 @@ export default function CGMDashboard() {
             <h1 className="text-2xl font-bold text-slate-800">CGM Dashboard</h1>
             <p className="text-sm text-slate-500">Real-time glucose monitoring</p>
           </div>
-          <Button onClick={handleSync} disabled={syncing} variant="outline">
-            {syncing ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4 mr-2" />
-            )}
-            Sync Now
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportToCSV} variant="outline" size="sm">
+              <FileText className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+            <Button onClick={exportToPDF} variant="outline" size="sm">
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+            <Button onClick={handleSync} disabled={syncing} variant="outline">
+              {syncing ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Sync Now
+            </Button>
+          </div>
         </div>
 
         {/* Action Recommendations */}
