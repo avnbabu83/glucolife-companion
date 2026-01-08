@@ -123,8 +123,8 @@ export default function NutritionComparison({ dateRange = 7 }) {
     }
   };
 
-  const adherenceRate = eatenMeals.length > 0 && plannedMeals.length > 0
-    ? Math.round((eatenMeals.length / (eatenMeals.length + plannedMeals.length)) * 100)
+  const adherenceRate = eatenMeals.length > 0 && allPlannedMeals.length > 0
+    ? Math.round((eatenMeals.length / allPlannedMeals.length) * 100)
     : 0;
 
   return (
