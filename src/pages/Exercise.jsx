@@ -153,8 +153,29 @@ export default function Exercise() {
       let weatherInfo = '';
       if (considerWeather) {
         try {
+          // Check location consent
+          if (!userProfile?.consent_location) {
+            toast.error('Please enable location consent in your profile settings');
+            setConsiderWeather(false);
+            return;
+          }
+
+          // Get user's actual location
+          const position = await new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+              reject(new Error('Geolocation not supported'));
+              return;
+            }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              enableHighAccuracy: true
+            });
+          });
+
+          const { latitude, longitude } = position.coords;
+          
           const weather = await base44.integrations.Core.InvokeLLM({
-            prompt: `Get current weather for the user's location. Return temperature, conditions, and if it's suitable for outdoor exercise.`,
+            prompt: `Get current weather for coordinates ${latitude}, ${longitude}. Return temperature in Fahrenheit, current conditions, and if it's suitable for outdoor exercise.`,
             add_context_from_internet: true,
             response_json_schema: {
               type: "object",
@@ -162,12 +183,13 @@ export default function Exercise() {
                 temperature: { type: "number" },
                 conditions: { type: "string" },
                 suitable_for_outdoor: { type: "boolean" },
-                recommendation: { type: "string" }
+                recommendation: { type: "string" },
+                location: { type: "string" }
               }
             }
           });
           setWeatherData(weather);
-          weatherInfo = `\n\nCurrent Weather:
+          weatherInfo = `\n\nCurrent Weather (${weather.location || 'Your Location'}):
           - Temperature: ${weather.temperature}°F
           - Conditions: ${weather.conditions}
           - Outdoor Exercise: ${weather.suitable_for_outdoor ? 'Suitable' : 'Not recommended'}
@@ -176,6 +198,12 @@ export default function Exercise() {
           ${weather.suitable_for_outdoor ? 'Prioritize outdoor exercises.' : 'Focus on indoor exercises.'}`;
         } catch (error) {
           console.error('Weather fetch failed:', error);
+          if (error.code === 1) {
+            toast.error('Location permission denied. Please enable location access in your browser.');
+          } else {
+            toast.error('Failed to get weather data');
+          }
+          setConsiderWeather(false);
         }
       }
 
