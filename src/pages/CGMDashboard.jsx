@@ -24,8 +24,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import GlucoseActionCard from '../components/cgm/GlucoseActionCard';
-import QuickFoodLog from '../components/logging/QuickFoodLog';
-import QuickWorkoutLog from '../components/logging/QuickWorkoutLog';
 import GlucoseEntryForm from '../components/glucose/GlucoseEntryForm';
 
 export default function CGMDashboard() {
@@ -40,22 +38,6 @@ export default function CGMDashboard() {
   const { data: readings = [], refetch } = useQuery({
     queryKey: ['allGlucoseReadings'],
     queryFn: () => base44.entities.GlucoseReading.list('-created_date', 288), // 24h of readings every 5min
-  });
-
-  const createMealMutation = useMutation({
-    mutationFn: (data) => base44.entities.MealPlan.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meals'] });
-      toast.success('Food logged');
-    },
-  });
-
-  const createExerciseMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
-      toast.success('Workout logged');
-    },
   });
 
   const createGlucoseMutation = useMutation({
@@ -353,10 +335,9 @@ export default function CGMDashboard() {
         </div>
 
         <Tabs defaultValue="chart" className="space-y-6">
-          <TabsList className="bg-white shadow-sm grid grid-cols-2 sm:grid-cols-4 w-full">
+          <TabsList className="bg-white shadow-sm grid grid-cols-3 w-full">
             <TabsTrigger value="chart">Chart</TabsTrigger>
             <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="log">Log</TabsTrigger>
             <TabsTrigger value="reminders">Alerts</TabsTrigger>
           </TabsList>
 
@@ -443,23 +424,6 @@ export default function CGMDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="log">
-            <div className="grid md:grid-cols-2 gap-6">
-              <QuickFoodLog onSubmit={(data) => createMealMutation.mutate(data)} />
-              <QuickWorkoutLog onSubmit={(data) => createExerciseMutation.mutate(data)} />
-            </div>
-            <Card className="border-0 shadow-sm mt-6 bg-blue-50">
-              <CardContent className="p-4">
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Tip:</strong> Log your food and exercise to see how they affect your glucose levels. 
-                  The AI will analyze patterns and provide personalized recommendations.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-
 
           <TabsContent value="reminders">
             <Card className="border-0 shadow-sm">
