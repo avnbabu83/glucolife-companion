@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Utensils, CheckCircle2, Sparkles } from 'lucide-react';
+import { Utensils, CheckCircle2, Sparkles, Camera, X } from 'lucide-react';
 import moment from 'moment';
 import { toast } from "sonner";
 
@@ -22,6 +22,8 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
   const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Get incomplete meals from today
   const incompleteMeals = todayMeals.filter(m => !m.is_completed);
@@ -49,6 +51,71 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       setNotes('');
     }
   }, [followedPlan, selectedMealId, todayMeals]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to server
+    setGenerating(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setUploadedImage(file_url);
+      
+      // Analyze the image
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this food image and provide:
+        1. Detailed description of the food items
+        2. Accurate nutritional information for the portion shown
+        3. Meal type (breakfast, lunch, dinner, or snack)
+        
+        Be specific about ingredients and portions.`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            food_name: { type: "string" },
+            description: { type: "string" },
+            calories: { type: "number" },
+            carbs: { type: "number" },
+            protein: { type: "number" },
+            fat: { type: "number" },
+            fiber: { type: "number" },
+            meal_type: { type: "string", enum: ["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "evening_snack"] },
+            glycemic_index: { type: "string", enum: ["low", "medium", "high"] }
+          }
+        }
+      });
+
+      setFoodName(result.food_name || '');
+      setMealType(result.meal_type || 'lunch');
+      setCalories(result.calories?.toString() || '');
+      setCarbs(result.carbs?.toString() || '');
+      setProtein(result.protein?.toString() || '');
+      setFat(result.fat?.toString() || '');
+      setFiber(result.fiber?.toString() || '');
+      setNotes(result.description || '');
+      toast.success('Food recognized from image!');
+    } catch (error) {
+      toast.error('Failed to analyze image');
+      setUploadedImage(null);
+      setImagePreview(null);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const clearImage = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+  };
 
   const generateNutrition = async () => {
     if (!foodName.trim()) {
@@ -180,6 +247,45 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Image Upload */}
+        <div>
+          <Label>Take or Upload a Photo</Label>
+          <div className="mt-2">
+            {imagePreview ? (
+              <div className="relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Food" 
+                  className="w-full h-48 object-cover rounded-xl"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={clearImage}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
+                <Camera className="w-8 h-8 text-slate-400 mb-2" />
+                <span className="text-sm text-slate-500">Click to capture food image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={generating}
+                />
+              </label>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">AI will analyze the food and extract nutrition info</p>
+        </div>
+
         <div>
           <Label>What did you eat? *</Label>
           <div className="flex gap-2 mt-1">
@@ -203,7 +309,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
               )}
             </Button>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Click ✨ to auto-generate nutrition info</p>
+          <p className="text-xs text-slate-500 mt-1">Or click ✨ to auto-generate from text</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
