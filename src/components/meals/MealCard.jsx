@@ -58,6 +58,9 @@ export default function MealCard({ meal, onComplete, onViewDetails, onDelete }) 
         </div>
       </div>
       
+      {meal.portion_size && (
+        <p className="text-xs text-emerald-700 font-medium mb-2">📏 Portion: {meal.portion_size}</p>
+      )}
       {meal.description && (
         <p className="text-sm text-slate-500 mb-3 line-clamp-2">{meal.description}</p>
       )}
