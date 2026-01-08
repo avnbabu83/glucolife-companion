@@ -35,8 +35,10 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
         - Focus on low glycemic index foods
         - 3 main meals + 2-3 snacks per day
         - Each meal should have detailed nutrition (calories, carbs, protein, fat, fiber)
+        - IMPORTANT: Include specific portion sizes in cups, grams, or pieces (e.g., "1 cup cooked rice", "4 oz chicken breast", "1/2 cup berries")
         - Include specific meal times
         - Make meals realistic and easy to prepare
+        - Portions should be diabetes-friendly and appropriate for blood sugar control
         
         Return exactly ${selectedDays} days of meal plans.`,
         response_json_schema: {
@@ -57,6 +59,7 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
                         scheduled_time: { type: "string" },
                         meal_name: { type: "string" },
                         description: { type: "string" },
+                        portion_size: { type: "string" },
                         ingredients: { type: "array", items: { type: "string" } },
                         calories: { type: "number" },
                         carbs: { type: "number" },
@@ -158,6 +161,9 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
                     {day.meals.map((meal, mealIdx) => (
                       <div key={mealIdx} className="text-sm p-2 bg-slate-50 rounded">
                         <p className="font-medium text-slate-800">{meal.meal_name}</p>
+                        {meal.portion_size && (
+                          <p className="text-xs text-emerald-600 font-medium">Portion: {meal.portion_size}</p>
+                        )}
                         <p className="text-xs text-slate-500 capitalize">{meal.meal_type} • {meal.calories} cal • {meal.carbs}g carbs</p>
                       </div>
                     ))}
