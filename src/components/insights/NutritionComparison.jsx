@@ -20,7 +20,7 @@ export default function NutritionComparison({ dateRange = 7 }) {
     queryKey: ['mealPlansForComparison', startDate],
     queryFn: async () => {
       const plans = await base44.entities.MealPlan.list('-date', 200);
-      return plans.filter(p => moment(p.date).isAfter(moment(startDate)));
+      return plans.filter(p => moment(p.date).isSameOrAfter(moment(startDate)));
     },
   });
 
@@ -31,9 +31,12 @@ export default function NutritionComparison({ dateRange = 7 }) {
 
   const userProfile = profile?.[0];
 
-  // Separate planned vs actually eaten
-  const plannedMeals = mealPlans.filter(m => !m.is_completed);
-  const eatenMeals = mealPlans.filter(m => m.is_completed);
+  // Filter to only last 7 days and separate planned vs eaten
+  const recentMeals = mealPlans.filter(m => 
+    moment(m.date).isBetween(moment().subtract(dateRange, 'days'), moment(), null, '[]')
+  );
+  const plannedMeals = recentMeals.filter(m => !m.is_completed);
+  const eatenMeals = recentMeals.filter(m => m.is_completed);
 
   // Calculate nutrition totals
   const calculateTotals = (meals) => ({
