@@ -15,7 +15,8 @@ import {
   Plus,
   Sparkles,
   Utensils,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 
 import MealCard from '@/components/meals/MealCard';
@@ -65,6 +66,17 @@ export default function Meals() {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
       toast.success('Food logged successfully!');
       setShowFoodLog(false);
+    },
+  });
+
+  const clearUnloggedMutation = useMutation({
+    mutationFn: async () => {
+      const unloggedMeals = meals.filter(m => !m.is_completed);
+      await Promise.all(unloggedMeals.map(m => base44.entities.MealPlan.delete(m.id)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      toast.success('Cleared unlogged meals');
     },
   });
 
@@ -165,13 +177,27 @@ export default function Meals() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
           <div className="flex gap-2">
+            {meals.filter(m => !m.is_completed).length > 0 && (
+              <Button 
+                onClick={() => {
+                  if (confirm('Clear all unlogged meals for this day?')) {
+                    clearUnloggedMutation.mutate();
+                  }
+                }}
+                variant="outline"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear Unlogged
+              </Button>
+            )}
             {meals.length > 0 && (
               <Button 
                 onClick={exportMealPlan}
                 variant="outline"
+                size="sm"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Export
+                <Download className="w-4 h-4" />
               </Button>
             )}
             <Button 
@@ -186,7 +212,7 @@ export default function Meals() {
               variant="outline"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Generate Plan
+              Generate
             </Button>
           </div>
         </div>
@@ -229,30 +255,32 @@ export default function Meals() {
 
         {/* Summary */}
         {meals.length > 0 && (
-          <div className="grid grid-cols-4 gap-4 bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-slate-800">
-                {meals.reduce((sum, m) => sum + (m.calories || 0), 0)}
-              </p>
-              <p className="text-xs text-slate-500">Total Calories</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-amber-600">
-                {meals.reduce((sum, m) => sum + (m.carbs || 0), 0)}g
-              </p>
-              <p className="text-xs text-slate-500">Carbs</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-rose-600">
-                {meals.reduce((sum, m) => sum + (m.protein || 0), 0)}g
-              </p>
-              <p className="text-xs text-slate-500">Protein</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
-                {meals.reduce((sum, m) => sum + (m.fat || 0), 0)}g
-              </p>
-              <p className="text-xs text-slate-500">Fat</p>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-slate-800">
+                  {meals.reduce((sum, m) => sum + (m.calories || 0), 0)}
+                </p>
+                <p className="text-xs text-slate-500">Calories</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-amber-600">
+                  {meals.reduce((sum, m) => sum + (m.carbs || 0), 0)}g
+                </p>
+                <p className="text-xs text-slate-500">Carbs</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-rose-600">
+                  {meals.reduce((sum, m) => sum + (m.protein || 0), 0)}g
+                </p>
+                <p className="text-xs text-slate-500">Protein</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {meals.reduce((sum, m) => sum + (m.fat || 0), 0)}g
+                </p>
+                <p className="text-xs text-slate-500">Fat</p>
+              </div>
             </div>
           </div>
         )}
