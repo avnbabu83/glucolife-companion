@@ -220,8 +220,12 @@ export default function Exercise() {
         Consider exercises that help with insulin sensitivity.
         Make exercises realistic and easy to follow.
 
-        IMPORTANT: For each exercise, provide a relevant YouTube tutorial URL that shows how to properly perform the exercise.
-        Use real, existing YouTube URLs for beginner-friendly diabetes exercise tutorials.`,
+        CRITICAL: For EVERY exercise, you MUST provide a valid YouTube tutorial URL.
+        - Search for real YouTube videos like "chair exercises for seniors", "beginner walking workout", "diabetes-friendly yoga"
+        - Use actual existing YouTube URLs in format: https://www.youtube.com/watch?v=VIDEO_ID
+        - DO NOT leave video_url empty or null
+        - Find beginner-friendly tutorials suitable for people with diabetes
+        - Examples: https://www.youtube.com/watch?v=dQw4w9WgXcQ`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -688,16 +692,19 @@ export default function Exercise() {
                 </div>
               )}
               {previewExercises.map((ex, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-xl">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-slate-800">{ex.name}</p>
-                      <p className="text-sm text-slate-600 capitalize">{ex.exercise_type} • {ex.duration_minutes} min • {ex.intensity}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-2">Days: {ex.scheduled_days?.join(', ')}</p>
-                  <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ {ex.precautions}</p>
-                </div>
+               <div key={idx} className="p-4 bg-slate-50 rounded-xl">
+                 <div className="flex items-start justify-between mb-2">
+                   <div>
+                     <p className="font-semibold text-slate-800">{ex.name}</p>
+                     <p className="text-sm text-slate-600 capitalize">{ex.exercise_type} • {ex.duration_minutes} min • {ex.intensity}</p>
+                   </div>
+                 </div>
+                 <p className="text-xs text-slate-500 mb-2">Days: {ex.scheduled_days?.join(', ')}</p>
+                 {ex.video_url && (
+                   <p className="text-xs text-blue-600 mb-2">📹 Tutorial: {ex.video_url}</p>
+                 )}
+                 <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded">⚠️ {ex.precautions}</p>
+               </div>
               ))}
               <div className="space-y-2 pt-4">
                 <Button 
