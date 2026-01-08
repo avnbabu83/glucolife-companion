@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Plus,
   Sparkles,
-  Utensils
+  Utensils,
+  Download
 } from 'lucide-react';
 
 import MealCard from '@/components/meals/MealCard';
@@ -97,6 +98,34 @@ export default function Meals() {
     }
   };
 
+  const exportMealPlan = () => {
+    const csvContent = [
+      ['Date', 'Meal Type', 'Meal Name', 'Calories', 'Carbs (g)', 'Protein (g)', 'Fat (g)', 'Fiber (g)', 'Status'],
+      ...meals.map(m => [
+        m.date,
+        m.meal_type,
+        m.meal_name,
+        m.calories || 0,
+        m.carbs || 0,
+        m.protein || 0,
+        m.fat || 0,
+        m.fiber || 0,
+        m.is_completed ? 'Completed' : 'Pending'
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meal-plan-${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    toast.success('Meal plan exported!');
+  };
+
   const goToPreviousDay = () => {
     setSelectedDate(prev => moment(prev).subtract(1, 'day').toDate());
   };
@@ -119,6 +148,15 @@ export default function Meals() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
           <div className="flex gap-2">
+            {meals.length > 0 && (
+              <Button 
+                onClick={exportMealPlan}
+                variant="outline"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            )}
             <Button 
               onClick={() => setShowFoodLog(true)}
               className="bg-emerald-600 hover:bg-emerald-700"

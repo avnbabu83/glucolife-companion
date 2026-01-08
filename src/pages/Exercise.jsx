@@ -21,7 +21,8 @@ import {
   Flame,
   Clock,
   AlertTriangle,
-  Smartphone
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -227,6 +228,33 @@ export default function Exercise() {
     }));
   };
 
+  const exportExercisePlan = () => {
+    const csvContent = [
+      ['Exercise Name', 'Type', 'Duration (min)', 'Intensity', 'Days', 'Time', 'Calories', 'Precautions'],
+      ...exercises.map(e => [
+        e.name,
+        e.exercise_type,
+        e.duration_minutes,
+        e.intensity,
+        e.scheduled_days?.join('/') || '',
+        e.scheduled_time,
+        e.calories_burned || 0,
+        e.precautions || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `exercise-plan-${moment().format('YYYY-MM-DD')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    toast.success('Exercise plan exported!');
+  };
+
   const todaysExercises = exercises.filter(e => 
     e.is_active !== false && e.scheduled_days?.includes(currentDay)
   );
@@ -243,6 +271,15 @@ export default function Exercise() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
           <div className="flex gap-2 flex-wrap">
+            {exercises.length > 0 && (
+              <Button 
+                variant="outline"
+                onClick={exportExercisePlan}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            )}
             <Button 
               variant="outline"
               onClick={() => setShowHealthDialog(true)}

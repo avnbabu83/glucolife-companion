@@ -178,6 +178,13 @@ export default function Home() {
             </h1>
             <p className="text-slate-500 mt-1">{moment().format('dddd, MMMM D')}</p>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={() => base44.auth.logout()}
+            className="text-slate-600 hover:text-slate-800"
+          >
+            Sign Out
+          </Button>
         </div>
 
         {/* Quick Log Buttons */}

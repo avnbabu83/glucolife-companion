@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Loader2, Clock, Utensils, Dumbbell, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Clock, Utensils, Dumbbell, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import moment from 'moment';
 
 export default function LifestyleRoutineAnalyzer() {
   const [routine, setRoutine] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [merging, setMerging] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
@@ -28,6 +31,75 @@ export default function LifestyleRoutineAnalyzer() {
       setRoutine(userProfile.daily_routine);
     }
   }, [userProfile]);
+
+  const mergeMutation = useMutation({
+    mutationFn: async ({ meals, exercises }) => {
+      const mealPromises = meals.map(m => base44.entities.MealPlan.create(m));
+      const exercisePromises = exercises.map(e => base44.entities.ExercisePlan.create(e));
+      await Promise.all([...mealPromises, ...exercisePromises]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      toast.success('Recommendations merged into your plans!');
+    }
+  });
+
+  const mergeRecommendations = async () => {
+    if (!analysis) return;
+    
+    setMerging(true);
+    try {
+      const today = moment().format('YYYY-MM-DD');
+      const meals = [];
+      const exercises = [];
+
+      // Convert meal recommendations to meal plans
+      if (analysis.meal_recommendations?.length > 0) {
+        analysis.meal_recommendations.forEach((rec, idx) => {
+          const date = moment().add(idx, 'days').format('YYYY-MM-DD');
+          meals.push({
+            date,
+            meal_type: rec.meal?.toLowerCase() || 'breakfast',
+            scheduled_time: rec.suggested_time || '07:00',
+            meal_name: rec.meal_ideas?.[0] || `${rec.meal}`,
+            description: rec.reasoning,
+            calories: 400,
+            carbs: 50,
+            protein: 20,
+            fat: 15,
+            fiber: 5,
+            glycemic_index: 'low',
+            is_completed: false
+          });
+        });
+      }
+
+      // Convert exercise opportunities to exercise plans
+      if (analysis.exercise_opportunities?.length > 0) {
+        analysis.exercise_opportunities.forEach(opp => {
+          exercises.push({
+            name: opp.activity,
+            exercise_type: 'walking',
+            duration_minutes: parseInt(opp.duration) || 30,
+            intensity: 'moderate',
+            scheduled_days: ['Mon', 'Wed', 'Fri'],
+            scheduled_time: '07:00',
+            calories_burned: 150,
+            notes: opp.how_to_fit,
+            precautions: 'Check glucose before and after exercise',
+            is_active: true
+          });
+        });
+      }
+
+      await mergeMutation.mutateAsync({ meals, exercises });
+    } catch (error) {
+      toast.error('Failed to merge recommendations');
+    } finally {
+      setMerging(false);
+    }
+  };
 
   const exampleRoutine = `I wake up around 5:30 and catch a train to work by 6:45, so no exercise and no breakfast. I walk for 1 km to work from train station and I do a desk job with minimal walking or in office walking from desk to desk or meeting rooms. Around lunch I usually have a subway veggie salad and walk 10 mins each way from office to subway. 1km walk to station in the evening and 2km walk home from station and potentially gym/tennis 2-3 times a week on weekends or evening.`;
 
@@ -188,6 +260,24 @@ export default function LifestyleRoutineAnalyzer() {
 
         {analysis && (
           <div className="space-y-6 pt-4 border-t">
+            {/* Merge Button */}
+            <Button 
+              onClick={mergeRecommendations}
+              disabled={merging}
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+            >
+              {merging ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Merging Recommendations...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Merge into Meal & Exercise Plans
+                </>
+              )}
+            </Button>
             {/* Schedule Breakdown */}
             {analysis.schedule_breakdown?.length > 0 && (
               <div>
