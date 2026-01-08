@@ -26,6 +26,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import ExerciseCard from '@/components/exercise/ExerciseCard';
 import WearableIntegration from '@/components/wearables/WearableIntegration';
@@ -222,8 +223,12 @@ export default function Exercise() {
     }
   };
 
+  const [isAccepting, setIsAccepting] = useState(false);
+
   const acceptExercises = async () => {
-    if (!previewExercises) return;
+    if (!previewExercises || isAccepting) return;
+    
+    setIsAccepting(true);
     try {
       // Delete existing exercises
       const existingIds = exercises.map(e => e.id);
@@ -232,19 +237,36 @@ export default function Exercise() {
       }
       
       // Small delay to ensure deletions are processed
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Invalidate to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ['exercises'] });
       
       // Create new exercises
       const exercisesToCreate = previewExercises.map(e => ({
-        ...e,
+        name: e.name,
+        exercise_type: e.exercise_type,
+        duration_minutes: e.duration_minutes,
+        intensity: e.intensity,
+        scheduled_days: e.scheduled_days || [],
+        scheduled_time: e.scheduled_time || '07:00',
+        calories_burned: e.calories_burned || 0,
+        precautions: e.precautions || '',
         is_active: true
       }));
       
-      await bulkCreateExercisesMutation.mutateAsync(exercisesToCreate);
+      await base44.entities.ExercisePlan.bulkCreate(exercisesToCreate);
+      
+      // Refresh queries
+      await queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      
+      toast.success('Exercise plan updated successfully!');
       setPreviewExercises(null);
     } catch (error) {
       console.error('Error accepting exercises:', error);
-      toast.error('Failed to update exercise plan');
+      toast.error('Failed to update exercise plan: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -579,15 +601,26 @@ export default function Exercise() {
                 </div>
               ))}
               <div className="space-y-2 pt-4">
-                <Button onClick={acceptExercises} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                  Accept & Replace All
+                <Button 
+                  onClick={acceptExercises} 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  disabled={isAccepting}
+                >
+                  {isAccepting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Accept & Replace All'
+                  )}
                 </Button>
                 <div className="flex gap-2">
-                  <Button onClick={generateExercisePlan} variant="outline" className="flex-1" disabled={generating}>
+                  <Button onClick={generateExercisePlan} variant="outline" className="flex-1" disabled={generating || isAccepting}>
                     {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                     Generate New
                   </Button>
-                  <Button onClick={() => setPreviewExercises(null)} variant="outline" className="flex-1">
+                  <Button onClick={() => setPreviewExercises(null)} variant="outline" className="flex-1" disabled={isAccepting}>
                     Cancel
                   </Button>
                 </div>
