@@ -9,15 +9,22 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import moment from 'moment';
 import { calculateDailyCalories, getCalorieDistribution } from '@/components/utils/calorieCalculator';
+import { detectUserCurrency, formatCurrency } from '@/components/utils/currencyDetector';
 
 export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
   const [generating, setGenerating] = useState(false);
   const [previewMeals, setPreviewMeals] = useState(null);
   const [selectedDays, setSelectedDays] = useState(7);
+  const [userCurrency, setUserCurrency] = useState({ symbol: '$', code: 'USD', name: 'Dollars' });
   
   // Calculate personalized calorie target
   const personalizedCalories = calculateDailyCalories(userProfile);
   const [calorieTarget, setCalorieTarget] = useState(personalizedCalories);
+  
+  // Detect user's currency on mount
+  useEffect(() => {
+    detectUserCurrency().then(setUserCurrency);
+  }, []);
   
   // Fetch recent glucose data for personalized recommendations
   const { data: recentGlucose = [] } = useQuery({
@@ -38,14 +45,16 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
     try {
       const weeklyBudget = userProfile?.weekly_food_budget || null;
       const budgetConstraint = weeklyBudget 
-        ? `\n\nIMPORTANT BUDGET CONSTRAINT:
-        - Weekly food budget: $${weeklyBudget}
-        - Daily budget: $${(weeklyBudget / 7).toFixed(2)}
-        - Focus on affordable, budget-friendly ingredients
-        - Prioritize seasonal produce, legumes, beans, eggs, and affordable proteins
-        - Avoid expensive ingredients like salmon, organic specialty items unless budget allows
-        - Suggest bulk buying options and meal prep friendly recipes
-        - Make meals filling and nutritious within budget`
+        ? `\n\nCRITICAL BUDGET CONSTRAINT (Currency: ${userCurrency.code}):
+        - Weekly food budget: ${formatCurrency(weeklyBudget, userCurrency)}
+        - Daily budget: ${formatCurrency((weeklyBudget / 7).toFixed(2), userCurrency)}
+        - ONLY suggest extremely affordable ingredients: white rice (NOT brown rice), potatoes, onions, local seasonal vegetables
+        - Prioritize: lentils, dried beans, eggs (if budget allows), local vegetables, basic grains
+        - AVOID: brown rice, quinoa, salmon, organic items, imported foods, specialty ingredients
+        - Use local, seasonal produce that's cheapest in ${userCurrency.code} region
+        - Focus on traditional affordable meals from the region
+        - Make meals extremely filling and nutritious within very limited budget
+        - Suggest buying in bulk from local markets for best prices`
         : '';
 
       const dietaryDetails = userProfile?.dietary_preference === 'indian_vegetarian'
@@ -174,7 +183,7 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
             <Info className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-green-700">
               <p className="font-medium">Budget-Friendly Meals</p>
-              <p>Weekly budget: ${userProfile.weekly_food_budget} (${(userProfile.weekly_food_budget / 7).toFixed(2)}/day)</p>
+              <p>Weekly budget: {formatCurrency(userProfile.weekly_food_budget, userCurrency)} ({formatCurrency((userProfile.weekly_food_budget / 7).toFixed(2), userCurrency)}/day)</p>
             </div>
           </div>
         )}

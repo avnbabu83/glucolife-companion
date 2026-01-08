@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { User, Save, X, Plus } from 'lucide-react';
+import { detectUserCurrency, formatCurrency } from '@/components/utils/currencyDetector';
 
 export default function ProfileSetup({ profile, onSave, isLoading }) {
   const [formData, setFormData] = useState({
@@ -22,11 +23,17 @@ export default function ProfileSetup({ profile, onSave, isLoading }) {
     target_glucose_max: profile?.target_glucose_max || '',
     cgm_device: profile?.cgm_device || 'none',
     allergies: profile?.allergies || [],
-    health_conditions: profile?.health_conditions || []
+    health_conditions: profile?.health_conditions || [],
+    weekly_food_budget: profile?.weekly_food_budget || ''
   });
   
   const [newAllergy, setNewAllergy] = useState('');
   const [newCondition, setNewCondition] = useState('');
+  const [userCurrency, setUserCurrency] = useState({ symbol: '$', code: 'USD', name: 'Dollars' });
+  
+  useEffect(() => {
+    detectUserCurrency().then(setUserCurrency);
+  }, []);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -307,21 +314,21 @@ export default function ProfileSetup({ profile, onSave, isLoading }) {
           <div className="space-y-4">
             <h3 className="font-semibold text-slate-700">Budget (Optional)</h3>
             <div>
-              <Label>Weekly Food Budget</Label>
+              <Label>Weekly Food Budget ({userCurrency.code})</Label>
               <div className="flex gap-2 mt-1">
-                <span className="flex items-center justify-center w-10 h-10 border border-slate-200 rounded-lg bg-slate-50 text-slate-600">
-                  $
+                <span className="flex items-center justify-center min-w-12 h-10 px-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-600 text-sm">
+                  {userCurrency.symbol}
                 </span>
                 <Input
                   type="number"
                   value={formData.weekly_food_budget || ''}
                   onChange={(e) => handleChange('weekly_food_budget', parseInt(e.target.value) || null)}
-                  placeholder="e.g., 100"
+                  placeholder={userCurrency.code === 'INR' ? 'e.g., 2000' : userCurrency.code === 'CAD' ? 'e.g., 150' : 'e.g., 100'}
                   className="flex-1"
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Get affordable meal recommendations within your weekly budget
+                Get affordable meal recommendations in {userCurrency.name} within your weekly budget
               </p>
             </div>
           </div>
