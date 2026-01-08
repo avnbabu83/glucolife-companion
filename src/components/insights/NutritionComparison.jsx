@@ -152,7 +152,7 @@ export default function NutritionComparison({ dateRange = 7 }) {
         <div className="grid grid-cols-3 gap-4">
           <div className="p-4 bg-blue-50 rounded-xl text-center">
             <p className="text-sm text-blue-600 mb-1">Planned Meals</p>
-            <p className="text-2xl font-bold text-blue-700">{plannedMeals.length}</p>
+            <p className="text-2xl font-bold text-blue-700">{allPlannedMeals.length}</p>
           </div>
           <div className="p-4 bg-emerald-50 rounded-xl text-center">
             <p className="text-sm text-emerald-600 mb-1">Meals Logged</p>
