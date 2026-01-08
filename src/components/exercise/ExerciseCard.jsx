@@ -13,7 +13,8 @@ import {
   Heart,
   Footprints,
   Music,
-  Activity
+  Activity,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -126,20 +127,33 @@ export default function ExerciseCard({ exercise, isCompleted, onComplete }) {
             </div>
           )}
           
-          <Button 
-            size="sm" 
-            className={cn(
-              "mt-4 w-full",
-              isCompleted 
-                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" 
-                : "bg-violet-600 hover:bg-violet-700"
+          <div className="flex gap-2 mt-4">
+            {exercise.video_url && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="flex-1"
+                onClick={() => window.open(exercise.video_url, '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Show Me How
+              </Button>
             )}
-            onClick={() => onComplete?.(exercise)}
-            disabled={isCompleted}
-          >
-            <Check className="w-4 h-4 mr-1" />
-            {isCompleted ? 'Completed' : 'Mark Complete'}
-          </Button>
+            <Button 
+              size="sm" 
+              className={cn(
+                "flex-1",
+                isCompleted 
+                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" 
+                  : "bg-violet-600 hover:bg-violet-700"
+              )}
+              onClick={() => onComplete?.(exercise)}
+              disabled={isCompleted}
+            >
+              <Check className="w-4 h-4 mr-1" />
+              {isCompleted ? 'Completed' : 'Mark Complete'}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

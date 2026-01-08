@@ -303,6 +303,29 @@ export default function ProfileSetup({ profile, onSave, isLoading }) {
             </div>
           </div>
 
+          {/* Weekly Food Budget */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-slate-700">Budget (Optional)</h3>
+            <div>
+              <Label>Weekly Food Budget</Label>
+              <div className="flex gap-2 mt-1">
+                <span className="flex items-center justify-center w-10 h-10 border border-slate-200 rounded-lg bg-slate-50 text-slate-600">
+                  $
+                </span>
+                <Input
+                  type="number"
+                  value={formData.weekly_food_budget || ''}
+                  onChange={(e) => handleChange('weekly_food_budget', parseInt(e.target.value) || null)}
+                  placeholder="e.g., 100"
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Get affordable meal recommendations within your weekly budget
+              </p>
+            </div>
+          </div>
+
           <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
             <Save className="w-4 h-4 mr-2" />
             {isLoading ? 'Saving...' : 'Save Profile'}
