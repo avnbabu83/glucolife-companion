@@ -31,11 +31,14 @@ export default function NutritionComparison({ dateRange = 7 }) {
 
   const userProfile = profile?.[0];
 
-  // Filter to only last 7 days and separate planned vs eaten
+  // Filter to only last 7 days
   const recentMeals = mealPlans.filter(m => 
     moment(m.date).isBetween(moment().subtract(dateRange, 'days'), moment(), null, '[]')
   );
-  const plannedMeals = recentMeals.filter(m => !m.is_completed);
+  
+  // ALL meals represent the plan (both completed and incomplete)
+  const allPlannedMeals = recentMeals;
+  // Only completed meals represent what was actually eaten
   const eatenMeals = recentMeals.filter(m => m.is_completed);
 
   // Calculate nutrition totals
@@ -47,7 +50,7 @@ export default function NutritionComparison({ dateRange = 7 }) {
     fiber: meals.reduce((sum, m) => sum + (m.fiber || 0), 0)
   });
 
-  const plannedTotals = calculateTotals(plannedMeals);
+  const plannedTotals = calculateTotals(allPlannedMeals);
   const eatenTotals = calculateTotals(eatenMeals);
 
   const comparisonData = [
