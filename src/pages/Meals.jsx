@@ -16,7 +16,8 @@ import {
   Sparkles,
   Utensils,
   Download,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
 
 import MealCard from '@/components/meals/MealCard';
@@ -139,7 +140,7 @@ export default function Meals() {
     }
   };
 
-  const exportMealPlan = () => {
+  const exportMealPlanCSV = () => {
     const csvContent = [
       ['Date', 'Meal Type', 'Meal Name', 'Calories', 'Carbs (g)', 'Protein (g)', 'Fat (g)', 'Fiber (g)', 'Status'],
       ...meals.map(m => [
@@ -164,7 +165,55 @@ export default function Meals() {
     a.click();
     window.URL.revokeObjectURL(url);
     a.remove();
-    toast.success('Meal plan exported!');
+    toast.success('Meal plan exported to CSV');
+  };
+
+  const exportMealPlanPDF = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(20);
+      doc.text('Meal Plan Report', 20, 20);
+
+      // Date and Stats
+      doc.setFontSize(10);
+      doc.text(`Date: ${moment(selectedDate).format('MMMM D, YYYY')}`, 20, 30);
+      doc.text(`Total Meals: ${meals.length}`, 20, 37);
+      doc.text(`Completed: ${meals.filter(m => m.is_completed).length}`, 20, 43);
+      doc.text(`Total Calories: ${meals.reduce((sum, m) => sum + (m.calories || 0), 0)}`, 20, 49);
+      doc.text(`Total Carbs: ${meals.reduce((sum, m) => sum + (m.carbs || 0), 0)}g`, 20, 55);
+
+      // Table headers
+      doc.setFontSize(9);
+      doc.text('Meal', 20, 70);
+      doc.text('Type', 80, 70);
+      doc.text('Calories', 120, 70);
+      doc.text('Carbs', 150, 70);
+      doc.text('Status', 175, 70);
+
+      // Meals
+      let y = 80;
+      sortedMeals.forEach((meal) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(8);
+        doc.text(meal.meal_name.substring(0, 30), 20, y);
+        doc.text(meal.meal_type.replace('_', ' '), 80, y);
+        doc.text(`${meal.calories || 0}`, 120, y);
+        doc.text(`${meal.carbs || 0}g`, 150, y);
+        doc.text(meal.is_completed ? 'Done' : 'Pending', 175, y);
+        y += 7;
+      });
+
+      doc.save(`meal-plan-${dateStr}.pdf`);
+      toast.success('Report exported to PDF');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    }
   };
 
   const goToPreviousDay = () => {
@@ -190,13 +239,22 @@ export default function Meals() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-slate-800">Meal Plan</h1>
             {meals.length > 0 && (
-              <Button 
-                onClick={exportMealPlan}
-                variant="outline"
-                size="sm"
-              >
-                <Download className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={exportMealPlanCSV}
+                  variant="outline"
+                  size="sm"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <Button 
+                  onClick={exportMealPlanPDF}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
             )}
           </div>
           

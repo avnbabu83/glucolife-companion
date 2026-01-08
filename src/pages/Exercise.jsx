@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   Smartphone,
   Download,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -306,7 +307,7 @@ export default function Exercise() {
     }));
   };
 
-  const exportExercisePlan = () => {
+  const exportExercisePlanCSV = () => {
     const csvContent = [
       ['Exercise Name', 'Type', 'Duration (min)', 'Intensity', 'Days', 'Time', 'Calories', 'Precautions'],
       ...exercises.map(e => [
@@ -330,7 +331,52 @@ export default function Exercise() {
     a.click();
     window.URL.revokeObjectURL(url);
     a.remove();
-    toast.success('Exercise plan exported!');
+    toast.success('Exercise plan exported to CSV');
+  };
+
+  const exportExercisePlanPDF = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(20);
+      doc.text('Exercise Plan Report', 20, 20);
+
+      // Stats
+      doc.setFontSize(10);
+      doc.text(`Generated: ${moment().format('MMMM D, YYYY')}`, 20, 30);
+      doc.text(`Total Exercises: ${exercises.length}`, 20, 37);
+      doc.text(`Completed Today: ${completedToday.length}`, 20, 43);
+      doc.text(`Weekly Minutes: ${weeklyMinutes}`, 20, 49);
+
+      // Table headers
+      doc.setFontSize(9);
+      doc.text('Exercise', 20, 65);
+      doc.text('Type', 80, 65);
+      doc.text('Duration', 120, 65);
+      doc.text('Days', 150, 65);
+
+      // Exercises
+      let y = 75;
+      exercises.forEach((ex) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(8);
+        doc.text(ex.name.substring(0, 30), 20, y);
+        doc.text(ex.exercise_type.replace('_', ' '), 80, y);
+        doc.text(`${ex.duration_minutes} min`, 120, y);
+        doc.text(ex.scheduled_days?.join(', ').substring(0, 20) || '', 150, y);
+        y += 7;
+      });
+
+      doc.save(`exercise-plan-${moment().format('YYYY-MM-DD')}.pdf`);
+      toast.success('Report exported to PDF');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    }
   };
 
   const todaysExercises = exercises.filter(e => {
@@ -362,13 +408,22 @@ export default function Exercise() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-slate-800">Exercise Plan</h1>
             {exercises.length > 0 && (
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={exportExercisePlan}
-              >
-                <Download className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={exportExercisePlanCSV}
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={exportExercisePlanPDF}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
             )}
           </div>
 
