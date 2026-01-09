@@ -32,6 +32,13 @@ export default function DailyJournal({ onLogMeal, onLogExercise }) {
     queryFn: () => base44.entities.UserProfile.list(),
   });
 
+  const today = moment().format('YYYY-MM-DD');
+
+  const { data: todayGlucose = [] } = useQuery({
+    queryKey: ['glucoseReadings', today],
+    queryFn: () => base44.entities.GlucoseReading.filter({ date: today }),
+  });
+
   const userProfile = profile?.[0];
 
   const handleImageUpload = async (e) => {
@@ -66,21 +73,40 @@ export default function DailyJournal({ onLogMeal, onLogExercise }) {
 
     setAnalyzing(true);
     try {
+      // Build glucose context
+      let glucoseContext = '';
+      if (todayGlucose.length > 0) {
+        const readings = todayGlucose
+          .sort((a, b) => a.reading_time.localeCompare(b.reading_time))
+          .map(r => `${r.reading_time}: ${r.reading} mg/dL${r.context ? ` (${r.context})` : ''}`)
+          .join('\n');
+        
+        const avgGlucose = Math.round(todayGlucose.reduce((sum, r) => sum + r.reading, 0) / todayGlucose.length);
+        const targetMin = userProfile?.target_glucose_min || 70;
+        const targetMax = userProfile?.target_glucose_max || 180;
+        
+        glucoseContext = `\n\nACTUAL GLUCOSE READINGS TODAY:
+${readings}
+Average: ${avgGlucose} mg/dL (Target: ${targetMin}-${targetMax} mg/dL)
+
+CRITICAL: Use these actual readings to provide SPECIFIC feedback about what happened after meals/activities they mention, not generic "can help" statements. Reference actual times and values.`;
+      }
+
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Analyze this daily health journal entry for someone with ${userProfile?.diabetes_type || 'type 2'} diabetes:
 
 "${journalText}"
 
-${uploadedImage ? 'Also analyze the attached photo for any food items or activities.' : ''}
+${uploadedImage ? 'Also analyze the attached photo for any food items or activities.' : ''}${glucoseContext}
 
 Provide:
 1. A brief personalized summary of their day (2-3 sentences)
 2. Key events: meals, exercises, activities mentioned
-3. Potential impact on glucose levels
+3. ${todayGlucose.length > 0 ? 'ACTUAL glucose impact based on their readings - reference specific times and values from their data. Show what ACTUALLY happened, not what "can" happen.' : 'Potential impact on glucose levels'}
 4. 2-3 specific actionable tips for better diabetes management
 5. If meals/exercises are mentioned, suggest if they should log them with details
 
-Be encouraging, conversational, and focus on diabetes-friendly insights.`,
+Be encouraging, conversational, and focus on diabetes-friendly insights. ${todayGlucose.length > 0 ? 'ALWAYS reference their actual glucose data when discussing impact.' : ''}`,
         file_urls: uploadedImage ? [uploadedImage] : undefined,
         response_json_schema: {
           type: "object",
