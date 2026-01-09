@@ -30,6 +30,7 @@ import LifestyleRoutineAnalyzer from '@/components/insights/LifestyleRoutineAnal
 import PrivacyConsent from '@/components/privacy/PrivacyConsent';
 import DailyGlucoseTrendNotification from '@/components/insights/DailyGlucoseTrendNotification';
 import DailyJournal from '@/components/logging/DailyJournal';
+import DailyStressLogger from '@/components/logging/DailyStressLogger';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -101,6 +102,11 @@ export default function Home() {
     queryFn: () => base44.entities.SleepLog.list('-date', 1),
   });
 
+  const { data: todayStressLog = [] } = useQuery({
+    queryKey: ['todayStressLog', today],
+    queryFn: () => base44.entities.StressLog.filter({ date: today }),
+  });
+
   const updateMealMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.MealPlan.update(id, data),
     onSuccess: () => {
@@ -125,6 +131,14 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
       toast.success('Workout logged successfully!');
       setShowWorkoutLog(false);
+    },
+  });
+
+  const createStressLogMutation = useMutation({
+    mutationFn: (data) => base44.entities.StressLog.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todayStressLog'] });
+      toast.success('Stress level saved!');
     },
   });
 
@@ -263,6 +277,13 @@ export default function Home() {
 
           {/* Right Column */}
           <div className="space-y-6">
+            {/* Daily Stress Logger - show if not logged today */}
+            {todayStressLog.length === 0 && (
+              <DailyStressLogger 
+                onSubmit={(data) => createStressLogMutation.mutate(data)}
+              />
+            )}
+
             <DailyJournal 
               onLogMeal={() => setShowFoodLog(true)}
               onLogExercise={() => setShowWorkoutLog(true)}
