@@ -138,7 +138,7 @@ Be encouraging, conversational, and focus on diabetes-friendly insights.`,
           Quick Daily Log
         </CardTitle>
         <p className="text-sm text-slate-600 mt-1">
-          📝 Just had lunch? Went for a walk? Type it here with a photo - AI will analyze and suggest what to log in detail
+          📝 Summarize your day's meals, activities, and feelings here. AI will help you create detailed log entries all at once.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
