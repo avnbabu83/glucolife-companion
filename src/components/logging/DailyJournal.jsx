@@ -135,10 +135,10 @@ Be encouraging, conversational, and focus on diabetes-friendly insights.`,
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-indigo-600" />
-          Daily Summary Journal
+          Quick Daily Log
         </CardTitle>
         <p className="text-sm text-slate-600 mt-1">
-          Quickly narrate your day and get personalized insights
+          📝 Just had lunch? Went for a walk? Type it here with a photo - AI will analyze and suggest what to log in detail
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

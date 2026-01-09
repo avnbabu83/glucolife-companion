@@ -240,9 +240,9 @@ export default function LifestyleRoutineAnalyzer() {
     <>
       <Card className="border-0 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Lifestyle Routine Analyzer</CardTitle>
-          <p className="text-sm text-slate-500 mt-1">
-            Describe your daily routine in your own words, and get personalized diabetes management recommendations
+          <CardTitle className="text-lg">Weekly Routine Optimizer</CardTitle>
+          <p className="text-sm text-slate-600 mt-1">
+            🗓️ Describe your typical week (work schedule, commute, regular activities) - AI will create a personalized meal & exercise plan that fits your lifestyle
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
