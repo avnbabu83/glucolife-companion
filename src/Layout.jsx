@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { base44 } from '@/api/base44Client';
 import { 
   Home, 
   Utensils, 
@@ -8,7 +9,8 @@ import {
   Pill, 
   Dumbbell, 
   Moon,
-  User
+  User,
+  Users
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
@@ -16,6 +18,19 @@ import { Toaster } from "sonner";
 export default function Layout({ children }) {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        // User not authenticated
+      }
+    };
+    loadUser();
+  }, []);
 
   const navItems = [
     { name: 'Home', icon: Home, path: createPageUrl('Home') },
@@ -26,6 +41,12 @@ export default function Layout({ children }) {
     { name: 'Sleep', icon: Moon, path: createPageUrl('Sleep') },
     { name: 'Profile', icon: User, path: createPageUrl('Profile') },
   ];
+
+  const adminNavItems = currentUser?.role === 'admin' ? [
+    { name: 'Admin', icon: Users, path: createPageUrl('AdminUsers') },
+  ] : [];
+
+  const allNavItems = [...navItems, ...adminNavItems];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -39,7 +60,7 @@ export default function Layout({ children }) {
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 lg:hidden z-50">
         <div className="flex items-center justify-around py-2">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const isActive = currentPath === item.path || 
               (item.path.includes(item.name) && currentPath.includes(item.name));
             return (
@@ -76,9 +97,9 @@ export default function Layout({ children }) {
             </svg>
           </div>
         </div>
-        
+
         <div className="flex-1 flex flex-col items-center gap-2">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const isActive = currentPath === item.path || 
               (item.path.includes(item.name) && currentPath.includes(item.name));
             return (
