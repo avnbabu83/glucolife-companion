@@ -20,6 +20,7 @@ export default function AIRecommendations({
     try {
       const sleep = await base44.entities.SleepLog.list('-date', 7);
       const activity = await base44.entities.ActivityData.list('-date', 7);
+      const stressLogs = await base44.entities.StressLog.list('-date', 7);
 
       // Calculate glucose statistics
       const avgGlucose = glucoseReadings.length > 0 
@@ -60,6 +61,9 @@ ${sleep.map(s => `- ${s.date}: ${s.total_hours}hrs (${s.quality}), deep: ${s.dee
 Activity Data (last 7 days):
 ${activity.map(a => `- ${a.date}: ${a.steps || 0} steps, ${a.active_minutes || 0}min active, ${a.calories_burned || 0} cal, avg HR: ${a.heart_rate_avg || 'N/A'} bpm`).join('\n')}
 
+Stress Levels (last 7 days):
+${stressLogs.map(s => `- ${s.date}: Stress Level ${s.stress_level}/5${s.notes ? ` - "${s.notes}"` : ''}`).join('\n')}
+
 CRITICAL ANALYSIS REQUIRED:
 1. Identify specific glucose patterns (spikes, drops, trends at certain times)
 2. Correlate meals with glucose responses - which foods cause spikes?
@@ -67,7 +71,8 @@ CRITICAL ANALYSIS REQUIRED:
 4. Exercise effectiveness - pre/post glucose changes
 5. Activity level vs glucose stability
 6. Heart rate patterns during activities
-7. Overall lifestyle balance and diabetes management effectiveness
+7. STRESS CORRELATION: Analyze if high stress days correlate with glucose fluctuations - provide specific examples
+8. Overall lifestyle balance and diabetes management effectiveness
 
 Provide SPECIFIC, DATA-DRIVEN recommendations based on their actual readings, not generic advice. Reference specific glucose values, meal timings, and patterns you observe.`;
 
