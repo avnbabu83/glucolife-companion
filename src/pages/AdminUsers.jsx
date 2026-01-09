@@ -3,12 +3,23 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, Calendar, Shield, Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Users, Mail, Calendar, Shield, Loader2, UserPlus, Copy, CheckCircle2 } from 'lucide-react';
+import { toast } from "sonner";
 import moment from 'moment';
 
 export default function AdminUsers() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [testRole, setTestRole] = useState('user');
+  const [createdUsers, setCreatedUsers] = useState([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,6 +51,31 @@ export default function AdminUsers() {
     enabled: !!currentUser,
   });
 
+  const handleCreateTestUser = async () => {
+    if (!testEmail || !testEmail.includes('@')) {
+      toast.error('Please enter a valid email');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await base44.users.inviteUser(testEmail, testRole);
+      setCreatedUsers([...createdUsers, { email: testEmail, role: testRole, created: new Date() }]);
+      toast.success(`Test user invited: ${testEmail}`);
+      setTestEmail('');
+      setTestRole('user');
+    } catch (error) {
+      toast.error('Failed to create test user: ' + (error.message || 'Unknown error'));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
   if (loading || !currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -56,7 +92,86 @@ export default function AdminUsers() {
             <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
             <p className="text-sm text-slate-500">Admin Dashboard</p>
           </div>
-          <Badge className="bg-rose-600">Admin Only</Badge>
+          <div className="flex gap-2 items-center">
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-emerald-600 hover:bg-emerald-700">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Create Test User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create Test User</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Email Address</Label>
+                    <Input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      placeholder="testuser@example.com"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Role</Label>
+                    <Select value={testRole} onValueChange={setTestRole}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Regular User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    onClick={handleCreateTestUser}
+                    disabled={creating}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {creating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Invite Test User
+                      </>
+                    )}
+                  </Button>
+
+                  {createdUsers.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Recently Created</h4>
+                      <div className="space-y-2">
+                        {createdUsers.map((u, idx) => (
+                          <div key={idx} className="p-3 bg-slate-50 rounded-lg flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">{u.email}</p>
+                              <p className="text-xs text-slate-500 capitalize">{u.role}</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(u.email)}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Badge className="bg-rose-600">Admin Only</Badge>
+          </div>
         </div>
 
         {/* Stats */}
