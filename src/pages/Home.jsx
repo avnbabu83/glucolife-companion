@@ -29,6 +29,7 @@ import GlucoseTrendAnalysis from '@/components/insights/GlucoseTrendAnalysis';
 import LifestyleRoutineAnalyzer from '@/components/insights/LifestyleRoutineAnalyzer';
 import PrivacyConsent from '@/components/privacy/PrivacyConsent';
 import DailyGlucoseTrendNotification from '@/components/insights/DailyGlucoseTrendNotification';
+import DailyJournal from '@/components/logging/DailyJournal';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -262,6 +263,11 @@ export default function Home() {
 
           {/* Right Column */}
           <div className="space-y-6">
+            <DailyJournal 
+              onLogMeal={() => setShowFoodLog(true)}
+              onLogExercise={() => setShowWorkoutLog(true)}
+            />
+
             <LifestyleRoutineAnalyzer />
 
             <AIRecommendations 
