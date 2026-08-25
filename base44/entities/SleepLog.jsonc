@@ -1,0 +1,85 @@
+{
+  "name": "SleepLog",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "bedtime": {
+      "type": "string"
+    },
+    "wake_time": {
+      "type": "string"
+    },
+    "total_hours": {
+      "type": "number"
+    },
+    "quality": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "fair",
+        "poor"
+      ]
+    },
+    "deep_sleep_minutes": {
+      "type": "number",
+      "description": "Deep sleep duration in minutes"
+    },
+    "rem_sleep_minutes": {
+      "type": "number",
+      "description": "REM sleep duration in minutes"
+    },
+    "light_sleep_minutes": {
+      "type": "number",
+      "description": "Light sleep duration in minutes"
+    },
+    "interruptions": {
+      "type": "number",
+      "description": "Number of times woken up"
+    },
+    "morning_glucose": {
+      "type": "number"
+    },
+    "bedtime_glucose": {
+      "type": "number"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "apple_health",
+        "apple_watch",
+        "google_fit",
+        "fitbit",
+        "garmin",
+        "samsung_health",
+        "manual"
+      ],
+      "description": "Data source"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "bedtime",
+    "wake_time"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

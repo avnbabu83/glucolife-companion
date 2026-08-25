@@ -1,0 +1,43 @@
+{
+  "name": "StressLog",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "stress_level": {
+      "type": "number",
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "description": "1=Very Low, 2=Low, 3=Moderate, 4=High, 5=Very High"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional context about stress factors"
+    }
+  },
+  "required": [
+    "date",
+    "stress_level"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

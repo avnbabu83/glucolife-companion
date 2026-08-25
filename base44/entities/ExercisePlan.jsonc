@@ -1,0 +1,97 @@
+{
+  "name": "ExercisePlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "exercise_type": {
+      "type": "string",
+      "enum": [
+        "walking",
+        "jogging",
+        "running",
+        "cycling",
+        "swimming",
+        "yoga",
+        "pilates",
+        "strength_training",
+        "weight_lifting",
+        "hiit",
+        "stretching",
+        "dance",
+        "aerobics",
+        "tennis",
+        "badminton",
+        "basketball",
+        "football",
+        "golf",
+        "rowing",
+        "elliptical",
+        "stair_climbing",
+        "boxing",
+        "martial_arts",
+        "gym_workout",
+        "other"
+      ]
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "intensity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ]
+    },
+    "scheduled_days": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Days of the week"
+    },
+    "scheduled_time": {
+      "type": "string"
+    },
+    "calories_burned": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "precautions": {
+      "type": "string",
+      "description": "Diabetes-specific precautions"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "YouTube or instructional video URL"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "exercise_type",
+    "duration_minutes"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

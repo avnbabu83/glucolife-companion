@@ -1,0 +1,65 @@
+{
+  "name": "ExerciseLog",
+  "type": "object",
+  "properties": {
+    "exercise_plan_id": {
+      "type": "string"
+    },
+    "exercise_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "actual_duration": {
+      "type": "number"
+    },
+    "pre_exercise_glucose": {
+      "type": "number"
+    },
+    "post_exercise_glucose": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "partial",
+        "skipped"
+      ]
+    },
+    "how_felt": {
+      "type": "string",
+      "enum": [
+        "great",
+        "good",
+        "okay",
+        "tired",
+        "unwell"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "exercise_name",
+    "date",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

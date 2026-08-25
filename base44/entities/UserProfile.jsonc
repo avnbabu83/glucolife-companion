@@ -1,0 +1,199 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "diabetes_type": {
+      "type": "string",
+      "enum": [
+        "type1",
+        "type2",
+        "prediabetes",
+        "gestational"
+      ],
+      "description": "Type of diabetes"
+    },
+    "dietary_preference": {
+      "type": "string",
+      "enum": [
+        "omnivore",
+        "vegetarian",
+        "indian_vegetarian",
+        "vegan",
+        "pescetarian",
+        "keto",
+        "mediterranean"
+      ],
+      "description": "Dietary preference"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other",
+        "prefer_not_to_say"
+      ],
+      "description": "Gender"
+    },
+    "age": {
+      "type": "number"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Weight in kg"
+    },
+    "height": {
+      "type": "number",
+      "description": "Height in cm"
+    },
+    "activity_level": {
+      "type": "string",
+      "enum": [
+        "sedentary",
+        "lightly_active",
+        "moderately_active",
+        "very_active"
+      ]
+    },
+    "wake_time": {
+      "type": "string",
+      "description": "Usual wake up time"
+    },
+    "sleep_time": {
+      "type": "string",
+      "description": "Usual sleep time"
+    },
+    "target_glucose_min": {
+      "type": "number",
+      "description": "Target glucose minimum mg/dL"
+    },
+    "target_glucose_max": {
+      "type": "number",
+      "description": "Target glucose maximum mg/dL"
+    },
+    "cgm_device": {
+      "type": "string",
+      "enum": [
+        "none",
+        "libre2",
+        "libre3",
+        "dexcom_g6",
+        "dexcom_g7",
+        "medtronic",
+        "other"
+      ],
+      "description": "Connected CGM device"
+    },
+    "wearable_device": {
+      "type": "string",
+      "enum": [
+        "none",
+        "apple_health",
+        "apple_watch",
+        "google_fit",
+        "fitbit",
+        "garmin",
+        "samsung_health"
+      ],
+      "description": "Connected wearable device"
+    },
+    "last_sleep_hours": {
+      "type": "number",
+      "description": "Last synced sleep hours"
+    },
+    "last_heart_rate": {
+      "type": "number",
+      "description": "Last synced heart rate"
+    },
+    "last_steps": {
+      "type": "number",
+      "description": "Last synced steps"
+    },
+    "last_calories": {
+      "type": "number",
+      "description": "Last synced calories"
+    },
+    "libre_email": {
+      "type": "string",
+      "description": "LibreLinkUp login email"
+    },
+    "libre_password": {
+      "type": "string",
+      "description": "LibreLinkUp login password (encrypted)"
+    },
+    "libre_auth_token": {
+      "type": "string",
+      "description": "LibreLinkUp auth token"
+    },
+    "libre_user_id": {
+      "type": "string",
+      "description": "LibreLinkUp user ID"
+    },
+    "libre_connected_at": {
+      "type": "string",
+      "description": "When LibreLinkUp was connected"
+    },
+    "allergies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "health_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "daily_routine": {
+      "type": "string",
+      "description": "User's daily routine description for lifestyle analysis"
+    },
+    "weekly_food_budget": {
+      "type": "number",
+      "description": "Weekly food budget in USD for meal planning"
+    },
+    "consent_location": {
+      "type": "boolean",
+      "description": "User consent for location data access",
+      "default": false
+    },
+    "consent_cgm": {
+      "type": "boolean",
+      "description": "User consent for CGM device data access",
+      "default": false
+    },
+    "consent_wearables": {
+      "type": "boolean",
+      "description": "User consent for wearable device data access",
+      "default": false
+    },
+    "consent_email": {
+      "type": "boolean",
+      "description": "User consent for email notifications",
+      "default": true
+    },
+    "consent_given_at": {
+      "type": "string",
+      "description": "Timestamp when consent was given"
+    }
+  },
+  "required": [
+    "diabetes_type",
+    "dietary_preference"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "name": "ActivityData",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "steps": {
+      "type": "number",
+      "description": "Daily step count"
+    },
+    "calories_burned": {
+      "type": "number",
+      "description": "Calories burned"
+    },
+    "active_minutes": {
+      "type": "number",
+      "description": "Active minutes"
+    },
+    "heart_rate_avg": {
+      "type": "number",
+      "description": "Average heart rate"
+    },
+    "heart_rate_resting": {
+      "type": "number",
+      "description": "Resting heart rate"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "apple_health",
+        "apple_watch",
+        "google_fit",
+        "fitbit",
+        "garmin",
+        "samsung_health",
+        "manual"
+      ],
+      "description": "Data source"
+    }
+  },
+  "required": [
+    "date"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

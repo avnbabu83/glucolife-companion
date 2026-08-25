@@ -1,0 +1,77 @@
+{
+  "name": "GlucoseReading",
+  "type": "object",
+  "properties": {
+    "reading": {
+      "type": "number",
+      "description": "Glucose level in mg/dL"
+    },
+    "reading_time": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "context": {
+      "type": "string",
+      "enum": [
+        "fasting",
+        "pre_meal",
+        "post_meal",
+        "before_exercise",
+        "after_exercise",
+        "bedtime",
+        "random"
+      ]
+    },
+    "meal_association": {
+      "type": "string",
+      "description": "Associated meal plan ID if any"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "libre2",
+        "libre3",
+        "dexcom_g6",
+        "dexcom_g7",
+        "medtronic",
+        "other"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    },
+    "trend": {
+      "type": "string",
+      "enum": [
+        "rising_fast",
+        "rising",
+        "stable",
+        "falling",
+        "falling_fast"
+      ]
+    }
+  },
+  "required": [
+    "reading",
+    "reading_time",
+    "date"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

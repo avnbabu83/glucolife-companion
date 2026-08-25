@@ -1,0 +1,71 @@
+{
+  "name": "Medication",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "dosage": {
+      "type": "string"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "once_daily",
+        "twice_daily",
+        "three_times_daily",
+        "with_meals",
+        "before_meals",
+        "after_meals",
+        "bedtime",
+        "as_needed"
+      ]
+    },
+    "times": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Times to take medication"
+    },
+    "medication_type": {
+      "type": "string",
+      "enum": [
+        "insulin",
+        "oral",
+        "injectable",
+        "supplement",
+        "other"
+      ]
+    },
+    "with_food": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "dosage",
+    "frequency"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

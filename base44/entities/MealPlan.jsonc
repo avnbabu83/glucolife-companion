@@ -1,0 +1,101 @@
+{
+  "name": "MealPlan",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "meal_type": {
+      "type": "string",
+      "enum": [
+        "breakfast",
+        "morning_snack",
+        "lunch",
+        "afternoon_snack",
+        "dinner",
+        "evening_snack"
+      ]
+    },
+    "scheduled_time": {
+      "type": "string",
+      "description": "Time for the meal HH:MM"
+    },
+    "meal_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "portion_size": {
+      "type": "string",
+      "description": "Recommended portion size (e.g., 1 cup, 4 oz, 2 pieces)"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "calories": {
+      "type": "number"
+    },
+    "carbs": {
+      "type": "number",
+      "description": "Carbohydrates in grams"
+    },
+    "protein": {
+      "type": "number",
+      "description": "Protein in grams"
+    },
+    "fat": {
+      "type": "number",
+      "description": "Fat in grams"
+    },
+    "fiber": {
+      "type": "number",
+      "description": "Fiber in grams"
+    },
+    "glycemic_index": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "pre_meal_glucose": {
+      "type": "number"
+    },
+    "post_meal_glucose": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "meal_type",
+    "scheduled_time",
+    "meal_name"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
