@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, Calendar, Info } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import moment from 'moment';
-import { calculateDailyCalories, getCalorieDistribution } from '@/components/utils/calorieCalculator';
+import { Sparkles, Loader2, Info } from 'lucide-react';
+import api, { aiErrorMessage } from '@/api/client';
+import { toast } from "sonner";
+import { calculateDailyCalories } from '@/components/utils/calorieCalculator';
 import { detectUserCurrency, formatCurrency } from '@/components/utils/currencyDetector';
 
 export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
@@ -26,15 +25,6 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
     detectUserCurrency().then(setUserCurrency);
   }, []);
   
-  // Fetch recent glucose data for personalized recommendations
-  const { data: recentGlucose = [] } = useQuery({
-    queryKey: ['recentGlucoseForMeals'],
-    queryFn: async () => {
-      const readings = await base44.entities.GlucoseReading.list('-date', 50);
-      return readings.filter(r => moment(r.date).isAfter(moment().subtract(7, 'days')));
-    },
-  });
-
   // Update calorie target when profile changes
   useEffect(() => {
     setCalorieTarget(personalizedCalories);
@@ -43,112 +33,20 @@ export default function MealPlanGenerator({ userProfile, onPlanGenerated }) {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const weeklyBudget = userProfile?.weekly_food_budget || null;
-      const budgetConstraint = weeklyBudget 
-        ? `\n\nCRITICAL BUDGET CONSTRAINT (Currency: ${userCurrency.code}):
-        - Weekly food budget: ${formatCurrency(weeklyBudget, userCurrency)}
-        - Daily budget: ${formatCurrency((weeklyBudget / 7).toFixed(2), userCurrency)}
-        - ONLY suggest extremely affordable ingredients: white rice (NOT brown rice), potatoes, onions, local seasonal vegetables
-        - Prioritize: lentils, dried beans, eggs (if budget allows), local vegetables, basic grains
-        - AVOID: brown rice, quinoa, salmon, organic items, imported foods, specialty ingredients
-        - Use local, seasonal produce that's cheapest in ${userCurrency.code} region
-        - Focus on traditional affordable meals from the region
-        - Make meals extremely filling and nutritious within very limited budget
-        - Suggest buying in bulk from local markets for best prices`
-        : '';
-
-      const dietaryDetails = userProfile?.dietary_preference === 'indian_vegetarian'
-        ? 'Indian vegetarian meals with dal, sabzi, roti, rice. Use spices like turmeric, cumin.'
-        : userProfile?.dietary_preference === 'vegetarian'
-        ? 'Vegetarian meals with variety of vegetables, legumes, whole grains.'
-        : userProfile?.dietary_preference === 'vegan'
-        ? 'Vegan meals with plant-based proteins, no dairy or eggs.'
-        : userProfile?.dietary_preference === 'keto'
-        ? 'Keto-friendly meals with high fat, very low carb, moderate protein.'
-        : 'Balanced meals with lean proteins, whole grains, and vegetables.';
-
-      // Analyze recent glucose trends
-      const avgGlucose = recentGlucose.length > 0 
-        ? Math.round(recentGlucose.reduce((sum, r) => sum + r.reading, 0) / recentGlucose.length)
-        : null;
-      
-      const highReadings = recentGlucose.filter(r => r.reading > (userProfile?.target_glucose_max || 140)).length;
-      const lowReadings = recentGlucose.filter(r => r.reading < (userProfile?.target_glucose_min || 70)).length;
-      
-      const glucoseInsight = avgGlucose 
-        ? `\n\nRecent Glucose Analysis (last 7 days):
-        - Average: ${avgGlucose} mg/dL
-        - High readings: ${highReadings} occurrences
-        - Low readings: ${lowReadings} occurrences
-        - ${highReadings > 5 ? 'IMPORTANT: Reduce carbs and focus on very low GI foods' : ''}
-        - ${lowReadings > 3 ? 'IMPORTANT: Include more complex carbs for sustained energy' : ''}`
-        : '';
-
-      const macroDistribution = getCalorieDistribution(calorieTarget);
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a ${selectedDays}-day meal plan for someone with ${userProfile?.diabetes_type || 'type 2'} diabetes.
-
-        User Profile:
-        - Age: ${userProfile?.age || 'N/A'}, Weight: ${userProfile?.weight || 'N/A'}kg, Height: ${userProfile?.height || 'N/A'}cm
-        - Activity Level: ${userProfile?.activity_level || 'moderate'}
-        - Daily calorie target: ${calorieTarget} kcal (personalized based on their BMR and activity)
-        - Target macros: ${macroDistribution.carbs_grams}g carbs, ${macroDistribution.protein_grams}g protein, ${macroDistribution.fat_grams}g fat, ${macroDistribution.fiber_grams}g fiber
-        - Dietary preference: ${userProfile?.dietary_preference || 'balanced'} (${dietaryDetails})
-        - Glucose target: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL${glucoseInsight}${budgetConstraint}
-
-        Requirements:
-        - Focus on low glycemic index foods
-        - 3 main meals + 2-3 snacks per day
-        - Each meal should have detailed nutrition (calories, carbs, protein, fat, fiber)
-        - IMPORTANT: Include specific portion sizes in cups, grams, or pieces (e.g., "1 cup cooked rice", "4 oz chicken breast", "1/2 cup berries")
-        - Include specific meal times based on their schedule (wake: ${userProfile?.wake_time || '7:00 AM'}, sleep: ${userProfile?.sleep_time || '10:00 PM'})
-        - Make meals realistic and easy to prepare
-        - Portions should be diabetes-friendly and appropriate for blood sugar control
-        - Adapt recommendations based on recent glucose trends
-        
-        Return exactly ${selectedDays} days of meal plans.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            meal_plans: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  day: { type: "number" },
-                  meals: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        meal_type: { type: "string", enum: ["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "evening_snack"] },
-                        scheduled_time: { type: "string" },
-                        meal_name: { type: "string" },
-                        description: { type: "string" },
-                        portion_size: { type: "string" },
-                        ingredients: { type: "array", items: { type: "string" } },
-                        calories: { type: "number" },
-                        carbs: { type: "number" },
-                        protein: { type: "number" },
-                        fat: { type: "number" },
-                        fiber: { type: "number" },
-                        glycemic_index: { type: "string", enum: ["low", "medium", "high"] }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+      // The server reads the profile, recent glucose and meal responses; the budget currency is optional.
+      const target = Math.min(5000, Math.max(800, Number(calorieTarget) || 1800));
+      const currency = /^[A-Z]{3}$/.test(userCurrency?.code || '') ? userCurrency.code : undefined;
+      const result = await api.ai.run('meal-plan', {
+        days: selectedDays,
+        targetCalories: target,
+        ...(currency ? { currency } : {}),
       });
 
-      if (result.meal_plans) {
-        setPreviewMeals(result.meal_plans);
+      if (result?.mealPlan) {
+        setPreviewMeals(result.mealPlan);
       }
     } catch (error) {
-      console.error('Error generating meal plan:', error);
+      toast.error(aiErrorMessage(error, 'Failed to generate meal plan'));
     } finally {
       setGenerating(false);
     }

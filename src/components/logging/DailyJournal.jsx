@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import api, { aiErrorMessage } from '@/api/client';
+import { resizeImage } from '@/api/image';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +16,7 @@ import {
   TrendingUp,
   Lightbulb
 } from 'lucide-react';
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import moment from 'moment';
 
 export default function DailyJournal({ onLogMeal, onLogExercise }) {
   const [journalText, setJournalText] = useState('');
@@ -27,19 +25,6 @@ export default function DailyJournal({ onLogMeal, onLogExercise }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [summary, setSummary] = useState(null);
 
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
-  });
-
-  const today = moment().format('YYYY-MM-DD');
-
-  const { data: todayGlucose = [] } = useQuery({
-    queryKey: ['glucoseReadings', today],
-    queryFn: () => base44.entities.GlucoseReading.filter({ date: today }),
-  });
-
-  const userProfile = profile?.[0];
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -52,11 +37,11 @@ export default function DailyJournal({ onLogMeal, onLogExercise }) {
     reader.readAsDataURL(file);
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setUploadedImage(file_url);
+      const { file_key } = await api.uploads.upload(await resizeImage(file));
+      setUploadedImage(file_key);
       toast.success('Photo uploaded');
     } catch (error) {
-      toast.error('Failed to upload photo');
+      toast.error('Photo upload failed');
     }
   };
 
@@ -73,77 +58,16 @@ export default function DailyJournal({ onLogMeal, onLogExercise }) {
 
     setAnalyzing(true);
     try {
-      // Build glucose context
-      let glucoseContext = '';
-      if (todayGlucose.length > 0) {
-        const readings = todayGlucose
-          .sort((a, b) => a.reading_time.localeCompare(b.reading_time))
-          .map(r => `${r.reading_time}: ${r.reading} mg/dL${r.context ? ` (${r.context})` : ''}`)
-          .join('\n');
-        
-        const avgGlucose = Math.round(todayGlucose.reduce((sum, r) => sum + r.reading, 0) / todayGlucose.length);
-        const targetMin = userProfile?.target_glucose_min || 70;
-        const targetMax = userProfile?.target_glucose_max || 180;
-        
-        glucoseContext = `\n\nACTUAL GLUCOSE READINGS TODAY:
-${readings}
-Average: ${avgGlucose} mg/dL (Target: ${targetMin}-${targetMax} mg/dL)
-
-CRITICAL: Use these actual readings to provide SPECIFIC feedback about what happened after meals/activities they mention, not generic "can help" statements. Reference actual times and values.`;
-      }
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this daily health journal entry for someone with ${userProfile?.diabetes_type || 'type 2'} diabetes:
-
-"${journalText}"
-
-${uploadedImage ? 'Also analyze the attached photo for any food items or activities.' : ''}${glucoseContext}
-
-Provide:
-1. A brief personalized summary of their day (2-3 sentences)
-2. Key events: meals, exercises, activities mentioned
-3. ${todayGlucose.length > 0 ? 'ACTUAL glucose impact based on their readings - reference specific times and values from their data. Show what ACTUALLY happened, not what "can" happen.' : 'Potential impact on glucose levels'}
-4. 2-3 specific actionable tips for better diabetes management
-5. If meals/exercises are mentioned, suggest if they should log them with details
-
-Be encouraging, conversational, and focus on diabetes-friendly insights. ${todayGlucose.length > 0 ? 'ALWAYS reference their actual glucose data when discussing impact.' : ''}`,
-        file_urls: uploadedImage ? [uploadedImage] : undefined,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            summary: { type: "string" },
-            meals_mentioned: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  description: { type: "string" },
-                  meal_type: { type: "string" },
-                  should_log: { type: "boolean" }
-                }
-              }
-            },
-            exercises_mentioned: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  description: { type: "string" },
-                  duration_estimate: { type: "number" },
-                  should_log: { type: "boolean" }
-                }
-              }
-            },
-            glucose_impact: { type: "string" },
-            tips: { type: "array", items: { type: "string" } }
-          }
-        }
+      // The server adds today's glucose readings and the profile; uploadedImage holds the file_key.
+      const result = await api.ai.run('journal-summary', {
+        text: journalText.slice(0, 4000),
+        ...(uploadedImage ? { file_keys: [uploadedImage] } : {}),
       });
 
       setSummary(result);
       toast.success('Day analyzed!');
     } catch (error) {
-      toast.error('Failed to analyze');
+      toast.error(aiErrorMessage(error, 'Failed to analyze'));
     } finally {
       setAnalyzing(false);
     }
@@ -203,7 +127,7 @@ Be encouraging, conversational, and focus on diabetes-friendly insights. ${today
               <Camera className="w-6 h-6 text-slate-400" />
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={handleImageUpload}
                 disabled={analyzing}

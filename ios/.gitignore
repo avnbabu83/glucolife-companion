@@ -1,0 +1,6 @@
+iOSApp.xcodeproj/
+build/
+TestResults*/
+*.xcresult
+DerivedData/
+.DS_Store

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import api, { dexcomAvailable } from '@/api/client';
+import DexcomConnect from './DexcomConnect';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Link2, Unlink, RefreshCw, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import { cn } from "@/lib/utils";
-import { base44 } from '@/api/base44Client';
+import { Activity, Link2, Unlink, RefreshCw, CheckCircle, Info } from 'lucide-react';
 import { toast } from "sonner";
 import LibreConnect from './LibreConnect';
 
@@ -12,14 +12,32 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showLibreConnect, setShowLibreConnect] = useState(false);
+  // Real Dexcom only when the server lists it; otherwise the simulated Dexcom entries below stay.
+  const [dexcom, setDexcom] = useState({ available: false, connected: false, lastSyncAt: null });
 
-  const devices = [
+  const loadDexcom = async () => {
+    try {
+      const me = await api.auth.me();
+      if (!dexcomAvailable(me)) return setDexcom({ available: false, connected: false, lastSyncAt: null });
+      const [profile] = await api.entities.UserProfile.list(undefined, 1);
+      setDexcom({ available: true, connected: Boolean(profile?.dexcom_connected), lastSyncAt: profile?.dexcom_last_sync_at || null });
+    } catch {
+      setDexcom((d) => ({ ...d, available: false }));
+    }
+  };
+  useEffect(() => { loadDexcom(); }, []);
+
+  const allDevices = [
     { id: 'libre2', name: 'Freestyle Libre 2', logo: '📱', status: 'available' },
     { id: 'libre3', name: 'Freestyle Libre 3', logo: '📱', status: 'available' },
     { id: 'dexcom_g6', name: 'Dexcom G6', logo: '📊', status: 'available' },
     { id: 'dexcom_g7', name: 'Dexcom G7', logo: '📊', status: 'available' },
     { id: 'medtronic', name: 'Medtronic Guardian', logo: '🏥', status: 'available' }
   ];
+  const devices = dexcom.available ? allDevices.filter((d) => !d.id.startsWith('dexcom')) : allDevices;
+  const dexcomTile = dexcom.available && (
+    <DexcomConnect connected={dexcom.connected} lastSyncAt={dexcom.lastSyncAt} onChanged={loadDexcom} />
+  );
 
   const handleConnect = async (deviceId) => {
     setConnecting(true);
@@ -37,17 +55,19 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
   const handleSyncNow = async () => {
     setSyncing(true);
     try {
-      const response = await base44.functions.invoke('syncLibreData', {});
-      if (response.data.success) {
-        toast.success(`Synced ${response.data.synced} new readings`);
-      } else if (response.data.needsAuth) {
+      const result = await api.integrations.libre.sync();
+      if (result?.success) {
+        toast.success(`Synced ${result.imported} new readings`);
+      } else {
+        toast.error(result?.error || 'Sync failed');
+      }
+    } catch (error) {
+      if (error?.needsAuth) {
         toast.error('Please connect your LibreView account first');
         setShowLibreConnect(true);
       } else {
-        toast.error(response.data.error || 'Sync failed');
+        toast.error(error?.status === 502 ? 'LibreLinkUp is unavailable, please try again' : 'Failed to sync data');
       }
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to sync data');
     } finally {
       setSyncing(false);
     }
@@ -70,7 +90,7 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
                   <CheckCircle className="w-5 h-5 text-emerald-600" />
                   <div>
                     <p className="font-semibold text-emerald-800">
-                      {devices.find(d => d.id === currentDevice)?.name || currentDevice}
+                      {allDevices.find(d => d.id === currentDevice)?.name || currentDevice}
                     </p>
                     <p className="text-sm text-emerald-600">
                       {libreConnected ? 'LibreLinkUp connected' : 'Device selected'}
@@ -113,7 +133,9 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
                 setShowLibreConnect(false);
               }} />
             )}
-            
+
+            {dexcomTile}
+
             {latestReadings.length > 0 && (
               <div className="mt-4 pt-4 border-t border-emerald-200">
                 <p className="text-sm text-emerald-700 mb-2">Latest Synced Readings</p>
@@ -144,6 +166,7 @@ export default function CGMIntegration({ currentDevice, onDeviceChange, latestRe
             </div>
             
             <div className="space-y-2">
+              {dexcomTile}
               {devices.map((device) => (
                 <div 
                   key={device.id}

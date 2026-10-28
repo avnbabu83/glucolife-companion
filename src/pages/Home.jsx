@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api, getAccessToken } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,7 @@ import {
   Utensils, 
   Pill, 
   Moon, 
-  Dumbbell, 
-  Settings,
-  ArrowRight,
-  Plus
+  Dumbbell
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -43,13 +40,12 @@ export default function Home() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const isAuthenticated = await base44.auth.isAuthenticated();
-      if (!isAuthenticated) {
+      if (!getAccessToken()) {
         navigate(createPageUrl('MainHome'));
         return;
       }
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (error) {
         navigate(createPageUrl('MainHome'));
@@ -60,7 +56,7 @@ export default function Home() {
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   // Redirect to onboarding if no profile
@@ -74,41 +70,43 @@ export default function Home() {
 
   const { data: todayMeals = [] } = useQuery({
     queryKey: ['todayMeals', today],
-    queryFn: () => base44.entities.MealPlan.filter({ date: today }),
+    queryFn: () => api.entities.MealPlan.filter({ date: today }),
   });
 
   const { data: todayGlucose = [] } = useQuery({
     queryKey: ['todayGlucose', today],
-    queryFn: () => base44.entities.GlucoseReading.filter({ date: today }),
+    queryFn: () => api.entities.GlucoseReading.filter({ date: today }),
   });
 
   const { data: medications = [] } = useQuery({
     queryKey: ['medications'],
-    queryFn: () => base44.entities.Medication.filter({ is_active: true }),
+    queryFn: () => api.entities.Medication.filter({ is_active: true }),
   });
 
   const { data: todayMedLogs = [] } = useQuery({
     queryKey: ['todayMedLogs', today],
-    queryFn: () => base44.entities.MedicationLog.filter({ date: today }),
+    // MedicationLog is not one of the API's tables yet (open question), so no dose logs are loaded.
+    queryFn: async () => [],
   });
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
-    queryFn: () => base44.entities.ExercisePlan.filter({ is_active: true }),
+    // is_active lives in the row's extra object, which the API cannot filter on.
+    queryFn: async () => (await api.entities.ExercisePlan.list()).filter((e) => e.is_active !== false),
   });
 
   const { data: sleepLogs = [] } = useQuery({
     queryKey: ['sleepLogs'],
-    queryFn: () => base44.entities.SleepLog.list('-date', 1),
+    queryFn: () => api.entities.SleepLog.list('-date', 1),
   });
 
   const { data: todayStressLog = [] } = useQuery({
     queryKey: ['todayStressLog', today],
-    queryFn: () => base44.entities.StressLog.filter({ date: today }),
+    queryFn: () => api.entities.StressLog.filter({ date: today }),
   });
 
   const updateMealMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MealPlan.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.MealPlan.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
       toast.success('Food logged successfully!');
@@ -117,7 +115,7 @@ export default function Home() {
   });
 
   const createMealMutation = useMutation({
-    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    mutationFn: (data) => api.entities.MealPlan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
       toast.success('Food logged successfully!');
@@ -126,7 +124,7 @@ export default function Home() {
   });
 
   const createExerciseMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
+    mutationFn: (data) => api.entities.ExerciseLog.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
       toast.success('Workout logged successfully!');
@@ -135,7 +133,7 @@ export default function Home() {
   });
 
   const createStressLogMutation = useMutation({
-    mutationFn: (data) => base44.entities.StressLog.create(data),
+    mutationFn: (data) => api.entities.StressLog.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayStressLog'] });
       toast.success('Stress level saved!');
@@ -200,7 +198,7 @@ export default function Home() {
           </div>
           <Button 
             variant="outline" 
-            onClick={() => base44.auth.logout()}
+            onClick={() => api.auth.logout().finally(() => navigate('/sign-in'))}
             className="text-slate-600 hover:text-slate-800"
           >
             Sign Out

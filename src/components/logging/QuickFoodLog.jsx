@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import api, { aiErrorMessage } from '@/api/client';
+import { resizeImage } from '@/api/image';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,33 +77,11 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
     // Upload to server
     setGenerating(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setUploadedImage(file_url);
+      const { file_key } = await api.uploads.upload(await resizeImage(file));
+      setUploadedImage(file_key);
       
-      // Analyze the image
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this food image and provide:
-        1. Detailed description of the food items
-        2. Accurate nutritional information for the portion shown
-        3. Meal type (breakfast, lunch, dinner, or snack)
-        
-        Be specific about ingredients and portions.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            food_name: { type: "string" },
-            description: { type: "string" },
-            calories: { type: "number" },
-            carbs: { type: "number" },
-            protein: { type: "number" },
-            fat: { type: "number" },
-            fiber: { type: "number" },
-            meal_type: { type: "string", enum: ["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "evening_snack"] },
-            glycemic_index: { type: "string", enum: ["low", "medium", "high"] }
-          }
-        }
-      });
+      // Analyze the image (server-side task; the photo is read from storage by its key)
+      const result = await api.ai.run('food-photo', { file_keys: [file_key] });
 
       setFoodName(result.food_name || '');
       setMealType(result.meal_type || 'lunch');
@@ -114,7 +93,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       setNotes(result.description || '');
       toast.success('Food recognized from image!');
     } catch (error) {
-      toast.error('Failed to analyze image');
+      toast.error(aiErrorMessage(error, 'Failed to analyze image'));
       setUploadedImage(null);
       setImagePreview(null);
     } finally {
@@ -135,22 +114,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
 
     setGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the following food and provide accurate nutritional information: "${foodName}"
-        
-        Provide realistic estimates for a typical serving size.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            calories: { type: "number" },
-            carbs: { type: "number" },
-            protein: { type: "number" },
-            fat: { type: "number" },
-            fiber: { type: "number" },
-            glycemic_index: { type: "string", enum: ["low", "medium", "high"] }
-          }
-        }
-      });
+      const result = await api.ai.run('food-nutrition', { description: foodName.trim().slice(0, 500) });
 
       setCalories(result.calories?.toString() || '');
       setCarbs(result.carbs?.toString() || '');
@@ -159,7 +123,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
       setFiber(result.fiber?.toString() || '');
       toast.success('Nutritional info generated!');
     } catch (error) {
-      toast.error('Failed to generate nutrition info');
+      toast.error(aiErrorMessage(error, 'Failed to generate nutrition info'));
     } finally {
       setGenerating(false);
     }
@@ -182,6 +146,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
         fiber: parseInt(fiber) || meal.fiber || 0,
         calories: parseInt(calories) || meal.calories || 0,
         notes: notes || meal.notes || '',
+        ...(uploadedImage ? { image_file_key: uploadedImage } : {}),
         is_completed: true
       });
     } else {
@@ -197,9 +162,12 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
         fiber: parseInt(fiber) || 0,
         calories: parseInt(calories) || 0,
         notes,
+        ...(uploadedImage ? { image_file_key: uploadedImage } : {}),
         is_completed: true
       });
     }
+    setUploadedImage(null);
+    setImagePreview(null);
 
     setFollowedPlan(false);
     setSelectedMealId('');
@@ -284,7 +252,7 @@ export default function QuickFoodLog({ onSubmit, todayMeals = [] }) {
                 <span className="text-sm text-slate-500">Take photo or upload from gallery</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={handleImageUpload}
                   disabled={generating}

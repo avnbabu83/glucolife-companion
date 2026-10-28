@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,11 @@ import {
   Plus, 
   Clock, 
   Check, 
-  Calendar,
   AlertTriangle,
   History
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import MedicationList from '@/components/medication/MedicationList';
 
@@ -41,21 +41,22 @@ export default function Medications() {
 
   const { data: medications = [] } = useQuery({
     queryKey: ['medications'],
-    queryFn: () => base44.entities.Medication.list(),
+    queryFn: () => api.entities.Medication.list(),
   });
 
   const { data: todayLogs = [] } = useQuery({
     queryKey: ['medicationLogs', today],
-    queryFn: () => base44.entities.MedicationLog.filter({ date: today }),
+    // MedicationLog is not one of the API's tables yet (open question with the customer).
+    queryFn: async () => [],
   });
 
   const { data: recentLogs = [] } = useQuery({
     queryKey: ['recentMedicationLogs'],
-    queryFn: () => base44.entities.MedicationLog.list('-created_date', 50),
+    queryFn: async () => [],
   });
 
   const createMedicationMutation = useMutation({
-    mutationFn: (data) => base44.entities.Medication.create(data),
+    mutationFn: (data) => api.entities.Medication.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['medications'] });
       setShowAddDialog(false);
@@ -64,8 +65,11 @@ export default function Medications() {
   });
 
   const createLogMutation = useMutation({
-    mutationFn: (data) => base44.entities.MedicationLog.create(data),
+    mutationFn: async () => {
+      throw new Error('Dose logging is not available yet');
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['medicationLogs'] }),
+    onError: (error) => toast.error(error.message),
   });
 
   const resetForm = () => {

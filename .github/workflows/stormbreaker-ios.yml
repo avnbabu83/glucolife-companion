@@ -1,0 +1,46 @@
+# Builds and tests the iOS app on GitHub's Macs whenever ios/ changes. Free on public repositories; on private ones
+# Mac minutes count ten times against the account's included minutes. Push only (a pull request from the same
+# repository would run it twice).
+name: iOS build and test
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/stormbreaker-ios.yml"]
+  workflow_dispatch:
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+      - name: Build and run the tests
+        run: xcodebuild test -project iOSApp.xcodeproj -scheme iOSApp -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build CODE_SIGNING_ALLOWED=NO | tee xcodebuild.log
+      - name: Package the Simulator app
+        run: |
+          app=$(find build/Build/Products -maxdepth 2 -name "*.app" -path "*iphonesimulator*" | head -1)
+          (cd "$(dirname "$app")" && zip -qr "$GITHUB_WORKSPACE/ios-simulator-app.zip" "$(basename "$app")")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: ios-simulator-app.zip
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xcodebuild-log
+          path: ios/xcodebuild.log
+          retention-days: 14

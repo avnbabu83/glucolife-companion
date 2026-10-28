@@ -3,8 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Lightbulb, AlertTriangle, TrendingUp, Utensils } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { cn } from "@/lib/utils";
+import api, { aiErrorMessage } from '@/api/client';
+import { toast } from "sonner";
 
 export default function AIRecommendations({ 
   glucoseReadings = [], 
@@ -18,104 +18,11 @@ export default function AIRecommendations({
   const generateInsights = async () => {
     setLoading(true);
     try {
-      const sleep = await base44.entities.SleepLog.list('-date', 7);
-      const activity = await base44.entities.ActivityData.list('-date', 7);
-      const stressLogs = await base44.entities.StressLog.list('-date', 7);
-
-      // Calculate glucose statistics
-      const avgGlucose = glucoseReadings.length > 0 
-        ? Math.round(glucoseReadings.reduce((sum, r) => sum + r.reading, 0) / glucoseReadings.length)
-        : null;
-      
-      const timeInRange = glucoseReadings.length > 0
-        ? Math.round((glucoseReadings.filter(r => 
-            r.reading >= (userProfile?.target_glucose_min || 70) && 
-            r.reading <= (userProfile?.target_glucose_max || 140)
-          ).length / glucoseReadings.length) * 100)
-        : null;
-
-      const prompt = `Analyze this comprehensive diabetes and health data to provide highly personalized, actionable recommendations:
-
-User Profile:
-- Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
-- Age: ${userProfile?.age}, Weight: ${userProfile?.weight}kg, Height: ${userProfile?.height}cm
-- BMI: ${userProfile?.weight && userProfile?.height ? (userProfile.weight / Math.pow(userProfile.height/100, 2)).toFixed(1) : 'N/A'}
-- Activity Level: ${userProfile?.activity_level || 'moderate'}
-- Dietary Preference: ${userProfile?.dietary_preference || 'omnivore'}
-- Target Glucose Range: ${userProfile?.target_glucose_min || 70}-${userProfile?.target_glucose_max || 140} mg/dL
-- Current Average Glucose: ${avgGlucose || 'N/A'} mg/dL
-- Time in Range: ${timeInRange || 'N/A'}%
-
-Recent Glucose Readings (last 7 days):
-${glucoseReadings.slice(0, 20).map(r => `- ${r.reading} mg/dL at ${r.reading_time} (${r.context || 'random'}) - ${r.trend || 'stable'}`).join('\n')}
-
-Recent Meals (with glucose context):
-${mealHistory.slice(0, 10).map(m => `- ${m.meal_name} (${m.meal_type}): ${m.carbs}g carbs, ${m.calories} cal, GI: ${m.glycemic_index} - ${m.is_completed ? 'Logged' : 'Planned'}`).join('\n')}
-
-Recent Exercise:
-${exerciseLogs.slice(0, 7).map(e => `- ${e.exercise_name}: ${e.actual_duration}min, pre-glucose: ${e.pre_exercise_glucose || 'N/A'}, post-glucose: ${e.post_exercise_glucose || 'N/A'}, felt: ${e.how_felt || 'N/A'}`).join('\n')}
-
-Sleep Data (last 7 days):
-${sleep.map(s => `- ${s.date}: ${s.total_hours}hrs (${s.quality}), deep: ${s.deep_sleep_minutes || 'N/A'}min, morning glucose: ${s.morning_glucose || 'N/A'} mg/dL`).join('\n')}
-
-Activity Data (last 7 days):
-${activity.map(a => `- ${a.date}: ${a.steps || 0} steps, ${a.active_minutes || 0}min active, ${a.calories_burned || 0} cal, avg HR: ${a.heart_rate_avg || 'N/A'} bpm`).join('\n')}
-
-Stress Levels (last 7 days):
-${stressLogs.map(s => `- ${s.date}: Stress Level ${s.stress_level}/5${s.notes ? ` - "${s.notes}"` : ''}`).join('\n')}
-
-CRITICAL ANALYSIS REQUIRED:
-1. Identify specific glucose patterns (spikes, drops, trends at certain times)
-2. Correlate meals with glucose responses - which foods cause spikes?
-3. Analyze sleep quality impact on glucose control
-4. Exercise effectiveness - pre/post glucose changes
-5. Activity level vs glucose stability
-6. Heart rate patterns during activities
-7. STRESS CORRELATION: Analyze if high stress days correlate with glucose fluctuations - provide specific examples
-8. Overall lifestyle balance and diabetes management effectiveness
-
-Provide SPECIFIC, DATA-DRIVEN recommendations based on their actual readings, not generic advice. Reference specific glucose values, meal timings, and patterns you observe.`;
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            patterns: {
-              type: "array",
-              items: { type: "string" },
-              description: "Key patterns in glucose, sleep, activity, and lifestyle"
-            },
-            diet_recommendations: {
-              type: "array",
-              items: { type: "string" }
-            },
-            timing_suggestions: {
-              type: "array",
-              items: { type: "string" }
-            },
-            foods_to_include: {
-              type: "array",
-              items: { type: "string" }
-            },
-            foods_to_avoid: {
-              type: "array",
-              items: { type: "string" }
-            },
-            exercise_tips: {
-              type: "array",
-              items: { type: "string" }
-            },
-            alert: {
-              type: "string"
-            }
-          }
-        }
-      });
-
+      // The server builds the context (profile, 7-day glucose, meals, exercise, sleep, activity, stress).
+      const result = await api.ai.run('recommendations');
       setInsights(result);
     } catch (error) {
-      console.error('Error generating insights:', error);
+      toast.error(aiErrorMessage(error, 'Failed to generate insights'));
     } finally {
       setLoading(false);
     }
