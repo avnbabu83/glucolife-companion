@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -13,7 +13,6 @@ import {
   Minus,
   RefreshCw,
   Clock,
-  AlertCircle,
   CheckCircle,
   ArrowUp,
   ArrowDown,
@@ -22,7 +21,7 @@ import {
   Download,
   FileText
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import GlucoseActionCard from '../components/cgm/GlucoseActionCard';
@@ -34,16 +33,16 @@ export default function CGMDashboard() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: readings = [], refetch } = useQuery({
     queryKey: ['allGlucoseReadings'],
-    queryFn: () => base44.entities.GlucoseReading.list('-created_date', 288), // 24h of readings every 5min
+    queryFn: () => api.entities.GlucoseReading.list('-created_date', 288), // 24h of readings every 5min
   });
 
   const createGlucoseMutation = useMutation({
-    mutationFn: (data) => base44.entities.GlucoseReading.create(data),
+    mutationFn: (data) => api.entities.GlucoseReading.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allGlucoseReadings'] });
       toast.success('Glucose reading logged');
@@ -128,15 +127,15 @@ export default function CGMDashboard() {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const response = await base44.functions.invoke('syncLibreData', {});
-      if (response.data.success) {
-        toast.success(`Synced ${response.data.synced} new readings`);
+      const response = await api.integrations.libre.sync();
+      if (response?.success) {
+        toast.success(`Synced ${response.imported} new readings`);
         refetch();
       } else {
-        toast.error(response.data.error || 'Sync failed');
+        toast.error(response?.error || 'Sync failed');
       }
     } catch (error) {
-      toast.error('Failed to sync data');
+      toast.error(error.needsAuth ? 'Please reconnect your Libre account' : 'Failed to sync data');
     } finally {
       setSyncing(false);
     }

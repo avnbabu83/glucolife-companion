@@ -1,0 +1,19 @@
+Analyze glucose trends and dietary patterns for a person with {{ profile.diabetes_type }} diabetes:
+
+Glucose Data ({{ days }} days, {{ glucose.count }} readings):
+- Average: {{ glucose.average }} mg/dL
+- Time in range ({{ profile.target_min }}-{{ profile.target_max }}): {{ glucose.time_in_range }}%
+- High readings: {{ glucose.high }} ({{ glucose.high_pct }}%)
+- Low readings: {{ glucose.low }} ({{ glucose.low_pct }}%)
+
+Dietary Data ({{ meals.count }} logged meals):
+- Average carbs per meal: {{ meals.carbs }}g
+- Average protein per meal: {{ meals.protein }}g
+- Average fiber per meal: {{ meals.fiber }}g
+
+Provide:
+1. Overall control ("overall_control": excellent, good, needs_improvement or poor)
+2. Pattern analysis ("patterns_identified": trends and correlations)
+3. Dietary change recommendations ("dietary_recommendations": change, reason, priority high/medium/low)
+4. Meal timing suggestions ("meal_timing_suggestions")
+5. Priority actions for immediate improvement ("priority_actions")

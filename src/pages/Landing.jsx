@@ -1,17 +1,12 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Activity, Heart, TrendingDown, Brain, Apple, Dumbbell, Moon, Users, Target, Shield } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Activity, Heart, Brain, Apple, Dumbbell, Moon, Users, Target, Shield } from 'lucide-react';
+import { getAccessToken } from '@/api/client';
 
 export default function Landing() {
   const handleGetStarted = async () => {
-    const isAuth = await base44.auth.isAuthenticated();
-    if (isAuth) {
-      window.location.href = '/Home';
-    } else {
-      base44.auth.redirectToLogin('/Home');
-    }
+    window.location.href = getAccessToken() ? '/Home' : '/sign-in';
   };
 
   return (

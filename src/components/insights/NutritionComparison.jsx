@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import api, { aiErrorMessage } from '@/api/client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useQuery } from '@tanstack/react-query';
 import moment from 'moment';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -20,17 +19,10 @@ export default function NutritionComparison({ dateRange = 7 }) {
   const { data: mealPlans = [] } = useQuery({
     queryKey: ['mealPlansForComparison', startDate],
     queryFn: async () => {
-      const plans = await base44.entities.MealPlan.list('-date', 200);
+      const plans = await api.entities.MealPlan.list('-date', 200);
       return plans.filter(p => moment(p.date).isSameOrAfter(moment(startDate)));
     },
   });
-
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
-  });
-
-  const userProfile = profile?.[0];
 
   // Filter meals for selected date only
   const recentMeals = mealPlans.filter(m => m.date === selectedDate);
@@ -100,40 +92,11 @@ export default function NutritionComparison({ dateRange = 7 }) {
   const analyzeAdherence = async () => {
     setAnalyzing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze nutrition adherence for a person with ${userProfile?.diabetes_type || 'type 2'} diabetes:
-        
-        Planned Daily Average (${allPlannedMeals.length} meals over ${daysWithPlannedMeals} days):
-        - Calories: ${plannedDailyAvg.calories}
-        - Carbs: ${plannedDailyAvg.carbs}g
-        - Protein: ${plannedDailyAvg.protein}g
-        - Fat: ${plannedDailyAvg.fat}g
-        - Fiber: ${plannedDailyAvg.fiber}g
-        
-        Actual Daily Average (${eatenMeals.length} meals over ${daysWithEatenMeals} days):
-        - Calories: ${eatenDailyAvg.calories}
-        - Carbs: ${eatenDailyAvg.carbs}g
-        - Protein: ${eatenDailyAvg.protein}g
-        - Fat: ${eatenDailyAvg.fat}g
-        - Fiber: ${eatenDailyAvg.fiber}g
-        
-        Provide:
-        1. Adherence percentage
-        2. Key differences and their impact on diabetes management
-        3. Specific actionable recommendations`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            adherence_percentage: { type: "number" },
-            key_differences: { type: "array", items: { type: "string" } },
-            recommendations: { type: "array", items: { type: "string" } },
-            overall_assessment: { type: "string" }
-          }
-        }
-      });
+      // The server totals planned vs eaten meals for this date from the user's own rows.
+      const result = await api.ai.run('nutrition-comparison', { date: selectedDate });
       setInsights(result);
     } catch (error) {
-      toast.error('Failed to analyze adherence');
+      toast.error(aiErrorMessage(error, 'Failed to analyze adherence'));
     } finally {
       setAnalyzing(false);
     }

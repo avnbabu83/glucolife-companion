@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -23,6 +23,7 @@ import WearableIntegration from '@/components/wearables/WearableIntegration';
 
 export default function Profile() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -32,7 +33,7 @@ export default function Profile() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const userData = await base44.auth.me();
+      const userData = await api.auth.me();
       setUser(userData);
     };
     loadUser();
@@ -40,16 +41,16 @@ export default function Profile() {
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: glucoseReadings = [] } = useQuery({
     queryKey: ['allGlucose'],
-    queryFn: () => base44.entities.GlucoseReading.list('-date', 5),
+    queryFn: () => api.entities.GlucoseReading.list('-date', 5),
   });
 
   const createProfileMutation = useMutation({
-    mutationFn: (data) => base44.entities.UserProfile.create(data),
+    mutationFn: (data) => api.entities.UserProfile.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       toast.success('Profile created successfully');
@@ -57,7 +58,7 @@ export default function Profile() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.UserProfile.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.UserProfile.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       toast.success('Profile updated successfully');
@@ -91,7 +92,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    base44.auth.logout();
+    api.auth.logout().finally(() => navigate('/sign-in'));
   };
 
   const profile = profiles[0];
@@ -171,7 +172,7 @@ export default function Profile() {
               currentDevice={profile?.cgm_device}
               onDeviceChange={handleCGMChange}
               latestReadings={glucoseReadings}
-              libreConnected={!!profile?.libre_sharing_code}
+              libreConnected={!!(profile?.libre_connected || profile?.libre_sharing_code)}
               onLibreConnected={() => queryClient.invalidateQueries({ queryKey: ['userProfile'] })}
             />
           </TabsContent>
@@ -290,15 +291,12 @@ export default function Profile() {
                       if (confirm('Are you absolutely sure? This action cannot be undone. All your health data will be permanently deleted.')) {
                         if (confirm('Final confirmation: Delete your account and all data?')) {
                           try {
-                            const response = await base44.functions.invoke('deleteAccount', {});
-                            if (response.data.success) {
-                              toast.success('Account deleted successfully');
-                              setTimeout(() => {
-                                base44.auth.logout();
-                              }, 2000);
-                            }
+                            // DELETE /api/v1/me answers 204; the client clears the in-memory session.
+                            await api.me.delete();
+                            toast.success('Account deleted successfully');
+                            navigate('/sign-in');
                           } catch (error) {
-                            toast.error(error.response?.data?.error || 'Failed to delete account');
+                            toast.error(error.retryable ? 'Could not delete your account right now. Try again.' : 'Failed to delete account');
                           }
                         }
                       }

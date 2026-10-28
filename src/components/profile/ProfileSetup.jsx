@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { User, Save, X, Plus } from 'lucide-react';
-import { detectUserCurrency, formatCurrency } from '@/components/utils/currencyDetector';
+import { detectUserCurrency } from '@/components/utils/currencyDetector';
 
 export default function ProfileSetup({ profile, onSave, isLoading }) {
   const [formData, setFormData] = useState({

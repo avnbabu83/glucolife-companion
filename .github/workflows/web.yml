@@ -1,0 +1,88 @@
+name: web
+
+# Pull requests: lint, unit tests, contract checks and build.
+# Merge to main: deploy to staging. Manual dispatch: deploy to production (GitHub 'production' environment approval).
+on:
+  pull_request:
+    paths: ["src/**", "public/**", "index.html", "package*.json", "scripts/**", "api/openapi.json", "infra/cloudfront/**", ".github/workflows/web.yml"]
+  push:
+    branches: [main]
+    paths: ["src/**", "public/**", "index.html", "package*.json", "scripts/**", "api/openapi.json", "infra/cloudfront/**", ".github/workflows/web.yml"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run check:contract
+      - run: npm run build
+        env:
+          VITE_APPLE_SERVICES_ID: ${{ vars.VITE_APPLE_SERVICES_ID }}
+          VITE_APPLE_REDIRECT_URI: ${{ vars.VITE_APPLE_REDIRECT_URI }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Per-environment GitHub variables: AWS_DEPLOY_ROLE_ARN, AWS_REGION, WEB_BUCKET (diabeteasy-{env}-web),
+      # CLOUDFRONT_DISTRIBUTION_ID, SITE_URL, and the public VITE_* identifiers.
+      WEB_BUCKET: ${{ vars.WEB_BUCKET }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_APPLE_SERVICES_ID: ${{ vars.VITE_APPLE_SERVICES_ID }}
+          VITE_APPLE_REDIRECT_URI: ${{ vars.VITE_APPLE_REDIRECT_URI }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      # Order matters: hashed assets first, then index.html, and --delete only after index.html is in place.
+      - name: Upload assets (immutable)
+        run: aws s3 sync dist/assets "s3://$WEB_BUCKET/assets" --cache-control "public, max-age=31536000, immutable"
+      - name: Upload other files and index.html (no-cache)
+        run: |
+          aws s3 sync dist "s3://$WEB_BUCKET" --exclude "assets/*" --exclude "index.html" --cache-control "no-cache"
+          aws s3 cp dist/.well-known/apple-app-site-association "s3://$WEB_BUCKET/.well-known/apple-app-site-association" \
+            --content-type application/json --cache-control "no-cache" || true
+          aws s3 cp dist/index.html "s3://$WEB_BUCKET/index.html" --cache-control "no-cache"
+      - name: Remove files no longer in the build
+        run: aws s3 sync dist "s3://$WEB_BUCKET" --delete --exclude "assets/*" --size-only && aws s3 sync dist/assets "s3://$WEB_BUCKET/assets" --delete --size-only
+      - name: Invalidate index.html
+        run: aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" --paths /index.html
+      - name: Smoke test through CloudFront
+        run: |
+          curl -fsS -o /dev/null "$SITE_URL/"
+          curl -fsS "$SITE_URL/healthz"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/sign-in")" = "200"
