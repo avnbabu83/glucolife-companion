@@ -1,0 +1,69 @@
+# Stormbreaker iOS build and test (template v4). Builds and tests the iOS app on GitHub's Macs whenever ios/ changes.
+# Free on public repositories; on private ones Mac minutes count ten times against the account's included minutes.
+# Push only (a pull request from the same repository would run it twice).
+name: iOS build and test
+on:
+  push:
+    branches: ["**"]  # not tags: a TestFlight tag on a commit already built does not build it again
+    paths: ["ios/**", ".github/workflows/stormbreaker-ios.yml"]
+  workflow_dispatch:
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        # bash here means -eo pipefail: a failing xcodebuild fails its step even though the output goes through tee.
+        shell: bash
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate the Xcode project
+        run: |
+          command -v xcodegen >/dev/null || brew install xcodegen
+          xcodegen generate
+          xcodebuild -version
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next((x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')), ''))")
+          [ -n "$udid" ] || { echo "::error::This Mac has no iPhone simulator installed"; exit 1; }
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$udid" || true  # booted now, the screen tests do not time out waiting for it
+      - name: Build and run the tests
+        run: |
+          xcodebuild test -project iOSApp.xcodeproj -scheme iOSApp -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build -resultBundlePath TestResults.xcresult -parallel-testing-enabled NO \
+            -retry-tests-on-failure -test-iterations 2 CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log
+      - name: List the failing tests
+        if: failure()
+        run: |
+          [ -d TestResults.xcresult ] || exit 0
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult > summary.json 2>/dev/null || exit 0
+          python3 -c "
+          import json
+          for f in json.load(open('summary.json')).get('testFailures', [])[:20]:
+              print('error: test', f.get('testIdentifierString') or f.get('testName'), '-', (f.get('failureText') or '').strip())
+          "
+      - name: Package the Simulator app
+        run: |
+          app=$(find build/Build/Products -maxdepth 2 -name "*.app" -path "*iphonesimulator*" | head -1)
+          [ -n "$app" ] || { echo "::error::The build produced no Simulator app"; exit 1; }
+          (cd "$(dirname "$app")" && zip -qr "$GITHUB_WORKSPACE/ios-simulator-app.zip" "$(basename "$app")")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: ios-simulator-app.zip
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xcodebuild-log
+          path: ios/xcodebuild.log
+          retention-days: 14

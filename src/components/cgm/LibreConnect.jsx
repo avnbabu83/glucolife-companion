@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import api from '@/api/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,19 +22,16 @@ export default function LibreConnect({ onConnected }) {
 
     setConnecting(true);
     try {
-      const response = await base44.functions.invoke('connectLibre', {
-        email: email,
-        password: password
-      });
+      const result = await api.integrations.libre.connect({ email, password });
 
-      if (response.data.success) {
+      if (result?.success) {
         toast.success('LibreLinkUp connected! Syncing data...');
         // Trigger initial sync
-        await base44.functions.invoke('syncLibreData', {});
+        await api.integrations.libre.sync();
         onConnected?.();
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to connect');
+      toast.error(error?.status === 502 ? 'LibreLinkUp is unavailable, please try again' : (error?.code || 'Failed to connect'));
     } finally {
       setConnecting(false);
     }
@@ -95,14 +92,14 @@ export default function LibreConnect({ onConnected }) {
               className="flex-shrink-0"
               onClick={async () => {
                 try {
-                  const response = await base44.functions.invoke('syncLibreData', {});
-                  if (response.data.success) {
-                    toast.success(`Synced ${response.data.synced} readings`);
+                  const result = await api.integrations.libre.sync();
+                  if (result?.success) {
+                    toast.success(`Synced ${result.imported} readings (${result.skipped} already saved)`);
                   } else {
-                    toast.error(response.data.error || 'Sync failed');
+                    toast.error(result?.error || 'Sync failed');
                   }
                 } catch (error) {
-                  toast.error('Failed to sync');
+                  toast.error(error?.needsAuth ? 'Please connect LibreLinkUp first' : 'Failed to sync');
                 }
               }}
             >

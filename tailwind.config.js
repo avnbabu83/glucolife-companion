@@ -9,7 +9,30 @@ module.exports = {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		fontFamily: {
+  			sans: ['Inter', 'system-ui', 'sans-serif'],
+  			display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif']
+  		},
   		colors: {
+  			// Daily Bento palette: the old emerald/teal classes used across the
+  			// screens now resolve to the primary blue (#2F52C9) and teal accent (#0E8F82).
+  			emerald: {
+  				50: '#EEF2FD', 100: '#DCE4FA', 200: '#B9C8F4', 300: '#8EA5EB', 400: '#5F7DDD',
+  				500: '#2F52C9', 600: '#2846AE', 700: '#213A8F', 800: '#1B2F73', 900: '#15255A', 950: '#0F1B33'
+  			},
+  			teal: {
+  				50: '#E7F7F5', 100: '#C6EDE8', 200: '#94DDD4', 300: '#5CC8BB', 400: '#2EAF9F',
+  				500: '#0E8F82', 600: '#0B7A6F', 700: '#09645B', 800: '#074F48', 900: '#053B36', 950: '#032623'
+  			},
+  			// Named Daily Bento scales used by the individual screens: brand = primary blue, mint = teal accent.
+  			brand: {
+  				50: '#EEF2FD', 100: '#DCE4FA', 200: '#B9C8F4', 300: '#8EA5EB', 400: '#5F7DDD',
+  				500: '#2F52C9', 600: '#2846AE', 700: '#213A8F', 800: '#1B2F73', 900: '#15255A', 950: '#0F1B33'
+  			},
+  			mint: {
+  				50: '#E7F7F5', 100: '#C6EDE8', 200: '#94DDD4', 300: '#5CC8BB', 400: '#2EAF9F',
+  				500: '#0E8F82', 600: '#0B7A6F', 700: '#09645B', 800: '#074F48', 900: '#053B36', 950: '#032623'
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

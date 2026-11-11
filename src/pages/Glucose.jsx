@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from "sonner";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart, BarChart, Bar } from 'recharts';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart, BarChart, Bar } from 'recharts';
 
 import GlucoseEntryForm from '@/components/glucose/GlucoseEntryForm';
 import CGMIntegration from '@/components/cgm/CGMIntegration';
@@ -33,18 +33,18 @@ export default function Glucose() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: readings = [] } = useQuery({
     queryKey: ['glucoseReadings', dateStr],
-    queryFn: () => base44.entities.GlucoseReading.filter({ date: dateStr }),
+    queryFn: () => api.entities.GlucoseReading.filter({ date: dateStr }),
   });
 
   const { data: weekReadings = [] } = useQuery({
     queryKey: ['weekGlucose'],
     queryFn: async () => {
-      const allReadings = await base44.entities.GlucoseReading.list('-created_date', 100);
+      const allReadings = await api.entities.GlucoseReading.list('-created_date', 100);
       return allReadings.filter(r => 
         moment(r.date).isAfter(moment().subtract(7, 'days'))
       );
@@ -52,7 +52,7 @@ export default function Glucose() {
   });
 
   const createReadingMutation = useMutation({
-    mutationFn: (data) => base44.entities.GlucoseReading.create(data),
+    mutationFn: (data) => api.entities.GlucoseReading.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['glucoseReadings'] }),
   });
 
@@ -60,7 +60,7 @@ export default function Glucose() {
     mutationFn: async (cgmDevice) => {
       const existingProfile = profile?.[0];
       if (existingProfile) {
-        return base44.entities.UserProfile.update(existingProfile.id, { cgm_device: cgmDevice });
+        return api.entities.UserProfile.update(existingProfile.id, { cgm_device: cgmDevice });
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
@@ -131,23 +131,22 @@ export default function Glucose() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Glucose Tracking</h1>
           <div className="flex gap-2">
-            {userProfile?.libre_sharing_code && (
+            {(userProfile?.libre_connected || userProfile?.libre_sharing_code) && (
               <Button 
                 variant="outline" 
                 onClick={async () => {
                   try {
-                    const res = await base44.functions.invoke('syncLibreData', {});
-                    console.log('Sync response:', res.data);
-                    if (res.data.success) {
+                    const res = await api.integrations.libre.sync();
+                    if (res?.success) {
                       queryClient.invalidateQueries({ queryKey: ['glucoseReadings'] });
                       queryClient.invalidateQueries({ queryKey: ['weekGlucose'] });
-                      toast.success(`Synced ${res.data.synced} new readings`);
+                      toast.success(`Synced ${res.imported} new readings`);
                     } else {
-                      toast.error(res.data.error || 'Sync failed');
+                      toast.error(res?.error || 'Sync failed');
                     }
                   } catch (err) {
                     console.error('Sync error:', err);
-                    toast.error(err.response?.data?.error || 'Failed to sync');
+                    toast.error(err.needsAuth ? 'Please reconnect your Libre account' : 'Failed to sync');
                   }
                 }}
               >
@@ -157,7 +156,7 @@ export default function Glucose() {
             )}
             <Button variant="outline" onClick={() => setShowCGMDialog(true)}>
               <Link2 className="w-4 h-4 mr-2" />
-              {userProfile?.libre_sharing_code ? 'CGM Settings' : 'Connect CGM'}
+              {(userProfile?.libre_connected || userProfile?.libre_sharing_code) ? 'CGM Settings' : 'Connect CGM'}
             </Button>
             <Popover>
               <PopoverTrigger asChild>

@@ -1,0 +1,18 @@
+Analyze glucose trends for a person with {{ profile.diabetes_type }} diabetes:
+
+Recent Glucose Trend (last 7 days):
+- Last 3 days average: {{ avg_last3 }} mg/dL
+- Previous 4 days average: {{ avg_prev4 }} mg/dL
+- Change: {{ '+' if trend > 0 else '' }}{{ trend }} mg/dL ({{ trend_pct }}%)
+
+Recent Habits:
+- {{ meals_count }} meals logged with avg {{ meals_avg_carbs }}g carbs/meal
+- {{ workouts }} workouts completed
+- Target range: {{ profile.target_min }}-{{ profile.target_max }} mg/dL
+
+Provide:
+1. "is_positive": is this trend positive (improving control)?
+2. "message": brief message about what's working or needs adjustment
+3. "tip": one specific actionable tip
+
+Keep it encouraging and conversational.
