@@ -1,0 +1,116 @@
+{
+  "UserProfile": [
+    "activity_level",
+    "age",
+    "allergies",
+    "daily_routine",
+    "diabetes_type",
+    "dietary_preference",
+    "extra",
+    "gender",
+    "height",
+    "sleep_time",
+    "target_glucose_max",
+    "target_glucose_min",
+    "wake_time",
+    "weight"
+  ],
+  "GlucoseReading": [
+    "context",
+    "date",
+    "date_time",
+    "external_id",
+    "extra",
+    "reading",
+    "reading_time",
+    "source_device",
+    "trend"
+  ],
+  "MealPlan": [
+    "calories",
+    "carbs",
+    "date",
+    "description",
+    "extra",
+    "fat",
+    "fiber",
+    "glycemic_index",
+    "image_file_key",
+    "ingredients",
+    "is_completed",
+    "meal_name",
+    "meal_type",
+    "notes",
+    "post_meal_glucose",
+    "pre_meal_glucose",
+    "protein",
+    "scheduled_time"
+  ],
+  "ExercisePlan": [
+    "calories_burned",
+    "date",
+    "duration_minutes",
+    "exercise_name",
+    "exercise_type",
+    "extra",
+    "intensity",
+    "is_completed",
+    "precautions",
+    "scheduled_days",
+    "scheduled_time"
+  ],
+  "ExerciseLog": [
+    "actual_duration",
+    "calories_burned",
+    "date",
+    "date_time",
+    "duration_minutes",
+    "exercise_name",
+    "extra",
+    "post_exercise_glucose",
+    "pre_exercise_glucose"
+  ],
+  "SleepLog": [
+    "bedtime",
+    "date",
+    "duration_minutes",
+    "external_id",
+    "extra",
+    "quality",
+    "sleep_end_time",
+    "sleep_start_time",
+    "source",
+    "total_hours",
+    "wake_time"
+  ],
+  "ActivityData": [
+    "active_minutes",
+    "calories",
+    "date",
+    "extra",
+    "resting_heart_rate",
+    "source",
+    "steps"
+  ],
+  "StressLog": [
+    "date",
+    "extra",
+    "notes",
+    "stress_level"
+  ],
+  "PrivacyConsent": [
+    "cgm",
+    "consented_at",
+    "email",
+    "extra",
+    "location",
+    "wearables"
+  ],
+  "Medication": [
+    "dosage",
+    "extra",
+    "is_active",
+    "name",
+    "schedule_times"
+  ]
+}

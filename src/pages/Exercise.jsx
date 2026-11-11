@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api, aiErrorMessage } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,29 +53,29 @@ export default function Exercise() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
-    queryFn: () => base44.entities.ExercisePlan.list(),
+    queryFn: () => api.entities.ExercisePlan.list(),
   });
 
   const { data: todayLogs = [] } = useQuery({
     queryKey: ['exerciseLogs', today],
-    queryFn: () => base44.entities.ExerciseLog.filter({ date: today }),
+    queryFn: () => api.entities.ExerciseLog.filter({ date: today }),
   });
 
   const { data: weekLogs = [] } = useQuery({
     queryKey: ['weekExerciseLogs'],
     queryFn: async () => {
-      const logs = await base44.entities.ExerciseLog.list('-date', 50);
+      const logs = await api.entities.ExerciseLog.list('-date', 50);
       return logs.filter(l => moment(l.date).isAfter(moment().subtract(7, 'days')));
     },
   });
 
   const createExerciseMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExercisePlan.create(data),
+    mutationFn: (data) => api.entities.ExercisePlan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises'] });
       setShowAddDialog(false);
@@ -85,12 +84,12 @@ export default function Exercise() {
   });
 
   const createLogMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
+    mutationFn: (data) => api.entities.ExerciseLog.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] }),
   });
 
   const bulkCreateExercisesMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExercisePlan.bulkCreate(data),
+    mutationFn: (data) => api.entities.ExercisePlan.bulkCreate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises'] });
       toast.success('Exercise plan created successfully!');
@@ -98,18 +97,18 @@ export default function Exercise() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.UserProfile.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.UserProfile.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
   });
 
   const deleteExerciseMutation = useMutation({
-    mutationFn: (id) => base44.entities.ExercisePlan.delete(id),
+    mutationFn: (id) => api.entities.ExercisePlan.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exercises'] }),
   });
 
   const clearUnloggedMutation = useMutation({
     mutationFn: async () => {
-      await Promise.all(exercises.map(e => base44.entities.ExercisePlan.delete(e.id)));
+      await Promise.all(exercises.map(e => api.entities.ExercisePlan.delete(e.id)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises'] });
@@ -151,110 +150,22 @@ export default function Exercise() {
   const generateExercisePlan = async () => {
     setGenerating(true);
     try {
-      let weatherInfo = '';
       if (considerWeather) {
-        try {
-          // Check location consent
-          if (!userProfile?.consent_location) {
-            toast.error('Please enable location consent in your profile settings');
-            setConsiderWeather(false);
-            return;
-          }
-
-          // Get user's actual location
-          const position = await new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-              reject(new Error('Geolocation not supported'));
-              return;
-            }
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 10000,
-              enableHighAccuracy: true
-            });
-          });
-
-          const { latitude, longitude } = position.coords;
-          
-          const weather = await base44.integrations.Core.InvokeLLM({
-            prompt: `Get current weather for coordinates ${latitude}, ${longitude}. Return temperature in Fahrenheit, current conditions, and if it's suitable for outdoor exercise.`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                temperature: { type: "number" },
-                conditions: { type: "string" },
-                suitable_for_outdoor: { type: "boolean" },
-                recommendation: { type: "string" },
-                location: { type: "string" }
-              }
-            }
-          });
-          setWeatherData(weather);
-          weatherInfo = `\n\nCurrent Weather (${weather.location || 'Your Location'}):
-          - Temperature: ${weather.temperature}°F
-          - Conditions: ${weather.conditions}
-          - Outdoor Exercise: ${weather.suitable_for_outdoor ? 'Suitable' : 'Not recommended'}
-          - Weather Note: ${weather.recommendation}
-          
-          ${weather.suitable_for_outdoor ? 'Prioritize outdoor exercises.' : 'Focus on indoor exercises.'}`;
-        } catch (error) {
-          console.error('Weather fetch failed:', error);
-          if (error.code === 1) {
-            toast.error('Location permission denied. Please enable location access in your browser.');
-          } else {
-            toast.error('Failed to get weather data');
-          }
-          setConsiderWeather(false);
-        }
+        // The Base44 weather lookup used internet search, which the new API does not offer
+        // (no server task maps to it), so the plan is generated without weather for now.
+        setWeatherData(null);
+        toast.info('Weather-based suggestions are not available yet; generating a standard plan.');
       }
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Create a diabetes-friendly weekly exercise plan for someone with:
-        - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
-        - Activity Level: ${userProfile?.activity_level || 'moderately_active'}
-        - Age: ${userProfile?.age || 'adult'}${weatherInfo}
-
-        Provide 5-7 exercises suitable for diabetics, with variety across the week.
-        Focus on low-impact exercises like walking, swimming, yoga, cycling, and stretching.
-        Include precautions for blood sugar management during exercise.
-        Consider exercises that help with insulin sensitivity.
-        Make exercises realistic and easy to follow.
-
-        CRITICAL: For EVERY exercise, you MUST provide a valid YouTube tutorial URL.
-        - Search for real YouTube videos like "chair exercises for seniors", "beginner walking workout", "diabetes-friendly yoga"
-        - Use actual existing YouTube URLs in format: https://www.youtube.com/watch?v=VIDEO_ID
-        - DO NOT leave video_url empty or null
-        - Find beginner-friendly tutorials suitable for people with diabetes
-        - Examples: https://www.youtube.com/watch?v=dQw4w9WgXcQ`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            exercises: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  exercise_type: { type: "string", enum: ["walking", "jogging", "cycling", "swimming", "yoga", "pilates", "strength_training", "stretching", "other"] },
-                  duration_minutes: { type: "number" },
-                  intensity: { type: "string", enum: ["low", "moderate", "high"] },
-                  scheduled_days: { type: "array", items: { type: "string", enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] } },
-                  scheduled_time: { type: "string" },
-                  calories_burned: { type: "number" },
-                  precautions: { type: "string" },
-                  video_url: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
+      // Server-side task: the API builds the prompt from the user's own profile and logs.
+      const result = await api.ai.run('exercise-plan', {});
 
       if (result.exercises) {
         setPreviewExercises(result.exercises);
       }
     } catch (error) {
       console.error('Error generating exercise plan:', error);
+      toast.error(aiErrorMessage(error));
     } finally {
       setGenerating(false);
     }
@@ -270,7 +181,7 @@ export default function Exercise() {
       // Delete existing exercises
       const existingIds = exercises.map(e => e.id);
       if (existingIds.length > 0) {
-        await Promise.all(existingIds.map(id => base44.entities.ExercisePlan.delete(id)));
+        await Promise.all(existingIds.map(id => api.entities.ExercisePlan.delete(id)));
       }
       
       // Small delay to ensure deletions are processed
@@ -504,18 +415,7 @@ export default function Exercise() {
                           if (!newExercise.name.trim()) return;
                           setGenerating(true);
                           try {
-                            const result = await base44.integrations.Core.InvokeLLM({
-                              prompt: `Analyze this workout description and provide realistic estimates: "${newExercise.name}"`,
-                              response_json_schema: {
-                                type: "object",
-                                properties: {
-                                  exercise_type: { type: "string" },
-                                  duration_minutes: { type: "number" },
-                                  calories_burned: { type: "number" },
-                                  intensity: { type: "string" }
-                                }
-                              }
-                            });
+                            const result = await api.ai.run('workout-estimate', { description: newExercise.name.trim().slice(0, 500) });
                             setNewExercise(prev => ({
                               ...prev,
                               exercise_type: result.exercise_type || prev.exercise_type,
@@ -525,6 +425,7 @@ export default function Exercise() {
                             }));
                           } catch (error) {
                             console.error('AI generation failed:', error);
+                            toast.error(aiErrorMessage(error));
                           } finally {
                             setGenerating(false);
                           }

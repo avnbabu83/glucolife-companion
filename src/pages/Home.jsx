@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api, getAccessToken } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   Activity, 
   Utensils, 
   Pill, 
   Moon, 
-  Dumbbell, 
-  Settings,
-  ArrowRight,
-  Plus
+  Dumbbell,
+  Target,
+  Bell,
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -32,6 +33,22 @@ import DailyGlucoseTrendNotification from '@/components/insights/DailyGlucoseTre
 import DailyJournal from '@/components/logging/DailyJournal';
 import DailyStressLogger from '@/components/logging/DailyStressLogger';
 
+// One frosted bento tile: tells one thing and opens its detail card when tapped.
+function BentoTile({ className = '', label, icon: Icon, onClick, children }) {
+  return (
+    <button type="button" onClick={onClick} className={`bento-tile text-left p-4 flex flex-col ${className}`}>
+      <span className="flex items-center justify-between text-xs font-medium text-slate-500 w-full">
+        <span className="flex items-center gap-1.5">
+          {Icon && <Icon className="w-4 h-4" aria-hidden="true" />}
+          {label}
+        </span>
+        <ChevronRight className="w-4 h-4" aria-hidden="true" />
+      </span>
+      <div className="mt-3 flex-1 w-full">{children}</div>
+    </button>
+  );
+}
+
 export default function Home() {
   const [user, setUser] = useState(null);
   const [showFoodLog, setShowFoodLog] = useState(false);
@@ -40,16 +57,18 @@ export default function Home() {
   const queryClient = useQueryClient();
   const today = moment().format('YYYY-MM-DD');
   const navigate = useNavigate();
+  const location = useLocation();
+  // Which bento tile is expanded into its full-height detail card.
+  const [detail, setDetail] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
-      const isAuthenticated = await base44.auth.isAuthenticated();
-      if (!isAuthenticated) {
+      if (!getAccessToken()) {
         navigate(createPageUrl('MainHome'));
         return;
       }
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (error) {
         navigate(createPageUrl('MainHome'));
@@ -60,7 +79,7 @@ export default function Home() {
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   // Redirect to onboarding if no profile
@@ -72,43 +91,52 @@ export default function Home() {
     }
   }, [profile, profileLoading, navigate]);
 
+  // The Insights tab links to #insights on this page.
+  useEffect(() => {
+    if (!profileLoading && location.hash === '#insights') {
+      document.getElementById('insights')?.scrollIntoView({ block: 'start' });
+    }
+  }, [location.hash, profileLoading]);
+
   const { data: todayMeals = [] } = useQuery({
     queryKey: ['todayMeals', today],
-    queryFn: () => base44.entities.MealPlan.filter({ date: today }),
+    queryFn: () => api.entities.MealPlan.filter({ date: today }),
   });
 
   const { data: todayGlucose = [] } = useQuery({
     queryKey: ['todayGlucose', today],
-    queryFn: () => base44.entities.GlucoseReading.filter({ date: today }),
+    queryFn: () => api.entities.GlucoseReading.filter({ date: today }),
   });
 
   const { data: medications = [] } = useQuery({
     queryKey: ['medications'],
-    queryFn: () => base44.entities.Medication.filter({ is_active: true }),
+    queryFn: () => api.entities.Medication.filter({ is_active: true }),
   });
 
   const { data: todayMedLogs = [] } = useQuery({
     queryKey: ['todayMedLogs', today],
-    queryFn: () => base44.entities.MedicationLog.filter({ date: today }),
+    // MedicationLog is not one of the API's tables yet (open question), so no dose logs are loaded.
+    queryFn: async () => [],
   });
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
-    queryFn: () => base44.entities.ExercisePlan.filter({ is_active: true }),
+    // is_active lives in the row's extra object, which the API cannot filter on.
+    queryFn: async () => (await api.entities.ExercisePlan.list()).filter((e) => e.is_active !== false),
   });
 
   const { data: sleepLogs = [] } = useQuery({
     queryKey: ['sleepLogs'],
-    queryFn: () => base44.entities.SleepLog.list('-date', 1),
+    queryFn: () => api.entities.SleepLog.list('-date', 1),
   });
 
   const { data: todayStressLog = [] } = useQuery({
     queryKey: ['todayStressLog', today],
-    queryFn: () => base44.entities.StressLog.filter({ date: today }),
+    queryFn: () => api.entities.StressLog.filter({ date: today }),
   });
 
   const updateMealMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MealPlan.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.MealPlan.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
       toast.success('Food logged successfully!');
@@ -117,7 +145,7 @@ export default function Home() {
   });
 
   const createMealMutation = useMutation({
-    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    mutationFn: (data) => api.entities.MealPlan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayMeals'] });
       toast.success('Food logged successfully!');
@@ -126,7 +154,7 @@ export default function Home() {
   });
 
   const createExerciseMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExerciseLog.create(data),
+    mutationFn: (data) => api.entities.ExerciseLog.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exerciseLogs'] });
       toast.success('Workout logged successfully!');
@@ -135,7 +163,7 @@ export default function Home() {
   });
 
   const createStressLogMutation = useMutation({
-    mutationFn: (data) => base44.entities.StressLog.create(data),
+    mutationFn: (data) => api.entities.StressLog.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayStressLog'] });
       toast.success('Stress level saved!');
@@ -185,13 +213,97 @@ export default function Home() {
     { label: 'Exercise', icon: Dumbbell, href: createPageUrl('Exercise'), color: 'bg-rose-500' },
   ];
 
+  // Bento tile summaries, derived only from the data already loaded above.
+  const targetMin = userProfile?.target_glucose_min || 70;
+  const targetMax = userProfile?.target_glucose_max || 140;
+  const dayReadings = [...todayGlucose]
+    .filter((r) => r.reading != null && r.reading_time)
+    .sort((a, b) => String(a.reading_time).localeCompare(String(b.reading_time)));
+  const inRangeCount = dayReadings.filter((r) => r.reading >= targetMin && r.reading <= targetMax).length;
+  const timeInRange = dayReadings.length ? Math.round((inRangeCount / dayReadings.length) * 100) : null;
+  const sparkPoints = dayReadings.map((r) => {
+    const [h, m] = String(r.reading_time).split(':').map(Number);
+    const x = (((h || 0) * 60 + (m || 0)) / 1440) * 300;
+    const y = 58 - ((Math.min(Math.max(r.reading, 40), 300) - 40) / 260) * 54;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const nextMeal = todayMeals
+    .filter((m) => !m.is_completed)
+    .sort((a, b) => String(a.scheduled_time || '').localeCompare(String(b.scheduled_time || '')))[0];
+
+  const details = {
+    glucose: {
+      title: "Today's glucose",
+      body: <GlucoseChart readings={todayGlucose} targetMin={targetMin} targetMax={targetMax} />,
+    },
+    range: {
+      title: 'Today at a glance',
+      body: (
+        <QuickStats
+          latestGlucose={latestGlucose}
+          mealsToday={completedMeals}
+          medicationsTaken={takenMeds}
+          sleepHours={lastSleepHours}
+          targetMin={userProfile?.target_glucose_min}
+          targetMax={userProfile?.target_glucose_max}
+        />
+      ),
+    },
+    meal: {
+      title: 'Coming up today',
+      body: (
+        <UpcomingReminders
+          meals={todayMeals.filter(m => !m.is_completed)}
+          medications={medications}
+          exercises={currentDayExercises}
+        />
+      ),
+    },
+    sleep: {
+      title: "Last night's sleep",
+      body: sleepLogs[0] ? (
+        <div className="space-y-1">
+          <p className="tile-number text-4xl text-slate-900">{sleepLogs[0].total_hours} hours</p>
+          <p className="text-sm text-slate-500 capitalize">{sleepLogs[0].quality} quality</p>
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">No sleep logged yet.</p>
+      ),
+    },
+    plans: {
+      title: 'Plans and medications',
+      body: (
+        <div className="grid grid-cols-2 gap-3">
+          {quickActions.map((action, idx) => (
+            <Link key={idx} to={action.href} className="bento-tile flex flex-col items-center p-4">
+              <div className={`${action.color} p-3 rounded-2xl mb-2`}>
+                <action.icon className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xs font-medium text-slate-600 text-center">{action.label}</span>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    insight: {
+      title: 'Insight',
+      body: (
+        <AIRecommendations
+          glucoseReadings={todayGlucose}
+          mealHistory={todayMeals}
+          userProfile={userProfile}
+        />
+      ),
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <div className="min-h-screen">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">
+            <h1 className="text-2xl font-display font-bold text-slate-900">
               {moment().format('h:mm A') < '12:00' ? 'Good Morning' : 
                moment().format('h:mm A') < '17:00' ? 'Good Afternoon' : 'Good Evening'}
               {user?.full_name && `, ${user.full_name.split(' ')[0]}`}
@@ -200,118 +312,104 @@ export default function Home() {
           </div>
           <Button 
             variant="outline" 
-            onClick={() => base44.auth.logout()}
+            onClick={() => api.auth.logout().finally(() => navigate('/sign-in'))}
+            size="sm"
             className="text-slate-600 hover:text-slate-800"
           >
             Sign Out
           </Button>
         </div>
 
+        {/* Three main actions as pills */}
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setShowFoodLog(true)} className="gap-2">
+            <Utensils className="w-4 h-4" /> Log Food
+          </Button>
+          <Button onClick={() => setShowWorkoutLog(true)} className="gap-2 bg-teal-500 hover:bg-teal-600">
+            <Dumbbell className="w-4 h-4" /> Log Workout
+          </Button>
+          <Button asChild variant="outline" className="gap-2">
+            <Link to={createPageUrl('Glucose')}><Activity className="w-4 h-4" /> Log Glucose</Link>
+          </Button>
+        </div>
+
         {/* Daily Glucose Trend Notification */}
         <DailyGlucoseTrendNotification />
 
-        {/* Quick Log Buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button 
-            onClick={() => setShowFoodLog(true)}
-            className="h-auto py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 flex items-center justify-center gap-2"
-          >
-            <Utensils className="w-5 h-5" />
-            <span className="font-semibold">Log Food</span>
-          </Button>
-          <Button 
-            onClick={() => setShowWorkoutLog(true)}
-            className="h-auto py-4 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 flex items-center justify-center gap-2"
-          >
-            <Dumbbell className="w-5 h-5" />
-            <span className="font-semibold">Log Workout</span>
-          </Button>
+        {/* Bento grid: tap any tile to open its detail card */}
+        <div className="bento-grid grid grid-cols-2 gap-3">
+          <BentoTile className="col-span-2" label="Glucose now" icon={Activity} onClick={() => setDetail('glucose')}>
+            <div className="flex items-end justify-between gap-4">
+              <p className="tile-number text-4xl text-slate-900">
+                {latestGlucose ?? '--'}<span className="text-sm font-sans font-medium text-slate-500 ml-1">mg/dL</span>
+              </p>
+              <span className="text-xs text-slate-500">Target {targetMin}-{targetMax}</span>
+            </div>
+            <svg viewBox="0 0 300 60" className="w-full h-14 mt-3" role="img" aria-label="Glucose over the last 24 hours" preserveAspectRatio="none">
+              <rect x="0" y={58 - ((targetMax - 40) / 260) * 54} width="300" height={((targetMax - targetMin) / 260) * 54} fill="#0E8F82" opacity="0.1" />
+              {dayReadings.length > 1 ? (
+                <polyline points={sparkPoints} fill="none" stroke="#2F52C9" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              ) : (
+                <text x="150" y="34" textAnchor="middle" fontSize="11" fill="#64748b">No readings yet today</text>
+              )}
+            </svg>
+          </BentoTile>
+
+          <BentoTile className="aspect-square" label="Time in range" icon={Target} onClick={() => setDetail('range')}>
+            <p className="tile-number text-4xl text-teal-600">{timeInRange == null ? '--' : `${timeInRange}%`}</p>
+            <p className="text-xs text-slate-500 mt-1">{dayReadings.length} readings today</p>
+          </BentoTile>
+
+          <BentoTile className="row-span-2" label="Sleep" icon={Moon} onClick={() => setDetail('sleep')}>
+            <p className="tile-number text-4xl text-slate-900">{lastSleepHours ?? '--'}<span className="text-sm font-sans font-medium text-slate-500 ml-1">h</span></p>
+            <p className="text-xs text-slate-500 mt-1 capitalize">{sleepLogs[0]?.quality ? `${sleepLogs[0].quality} quality` : 'Last night'}</p>
+          </BentoTile>
+
+          <BentoTile className="aspect-square" label="Next meal" icon={Bell} onClick={() => setDetail('meal')}>
+            <p className="font-display font-bold text-slate-900 leading-snug line-clamp-2">{nextMeal?.meal_name || 'All done'}</p>
+            <p className="text-xs text-slate-500 mt-1">{nextMeal?.scheduled_time || `${completedMeals} eaten today`}</p>
+          </BentoTile>
+
+          <BentoTile className="aspect-square" label="Plans" icon={Pill} onClick={() => setDetail('plans')}>
+            <p className="tile-number text-4xl text-slate-900">{medications.length}</p>
+            <p className="text-xs text-slate-500 mt-1">active medications</p>
+          </BentoTile>
+
+          <BentoTile className="aspect-square" label="Insight" icon={Sparkles} onClick={() => setDetail('insight')}>
+            <p className="font-display font-bold text-emerald-600 leading-snug">Personal tips</p>
+            <p className="text-xs text-slate-500 mt-1">From today's data</p>
+          </BentoTile>
         </div>
 
+        {/* Daily Stress Logger - show if not logged today */}
+        {todayStressLog.length === 0 && (
+          <DailyStressLogger 
+            onSubmit={(data) => createStressLogMutation.mutate(data)}
+          />
+        )}
 
-
-        {/* Quick Stats */}
-        <QuickStats 
-          latestGlucose={latestGlucose}
-          mealsToday={completedMeals}
-          medicationsTaken={takenMeds}
-          sleepHours={lastSleepHours}
-          targetMin={userProfile?.target_glucose_min}
-          targetMax={userProfile?.target_glucose_max}
+        <DailyJournal 
+          onLogMeal={() => setShowFoodLog(true)}
+          onLogExercise={() => setShowWorkoutLog(true)}
         />
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-3">
-          {quickActions.map((action, idx) => (
-            <Link key={idx} to={action.href}>
-              <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-                <div className={`${action.color} p-3 rounded-xl mb-2`}>
-                  <action.icon className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xs font-medium text-slate-600 text-center">{action.label}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {/* Insights tab lands here */}
+        <section id="insights" className="space-y-5 scroll-mt-20" aria-labelledby="insights-heading">
+          <h2 id="insights-heading" className="text-xl font-display font-bold text-slate-900">Insights</h2>
+          <GlucoseTrendAnalysis daysToAnalyze={14} />
+          <NutritionComparison dateRange={7} />
+          <LifestyleRoutineAnalyzer />
+        </section>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <GlucoseChart 
-              readings={todayGlucose}
-              targetMin={userProfile?.target_glucose_min || 70}
-              targetMax={userProfile?.target_glucose_max || 140}
-            />
-
-            <NutritionComparison dateRange={7} />
-
-            <GlucoseTrendAnalysis daysToAnalyze={14} />
-
-            <UpcomingReminders 
-              meals={todayMeals.filter(m => !m.is_completed)}
-              medications={medications}
-              exercises={currentDayExercises}
-            />
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Daily Stress Logger - show if not logged today */}
-            {todayStressLog.length === 0 && (
-              <DailyStressLogger 
-                onSubmit={(data) => createStressLogMutation.mutate(data)}
-              />
-            )}
-
-            <DailyJournal 
-              onLogMeal={() => setShowFoodLog(true)}
-              onLogExercise={() => setShowWorkoutLog(true)}
-            />
-
-            <LifestyleRoutineAnalyzer />
-
-            <AIRecommendations 
-              glucoseReadings={todayGlucose}
-              mealHistory={todayMeals}
-              userProfile={userProfile}
-            />
-
-            {/* Sleep Summary */}
-            {sleepLogs[0] && (
-              <div className="p-4 bg-indigo-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Moon className="w-5 h-5 text-indigo-600" />
-                  <div>
-                    <p className="text-sm font-medium text-indigo-800">Last Night's Sleep</p>
-                    <p className="text-2xl font-bold text-indigo-600">{sleepLogs[0].total_hours} hours</p>
-                    <p className="text-xs text-indigo-500 capitalize">{sleepLogs[0].quality} quality</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Full-height detail card for the tapped tile */}
+        <Dialog open={!!detail} onOpenChange={(open) => !open && setDetail(null)}>
+          <DialogContent className="max-w-lg h-[92vh] overflow-y-auto rounded-3xl bg-white/90 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-display">{detail ? details[detail].title : ''}</DialogTitle>
+            </DialogHeader>
+            {detail && details[detail].body}
+          </DialogContent>
+        </Dialog>
 
         {/* Privacy Consent */}
         <PrivacyConsent 

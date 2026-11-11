@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import api, { aiErrorMessage } from '@/api/client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export default function GlucoseTrendAnalysis({ daysToAnalyze = 14 }) {
   const { data: glucoseReadings = [] } = useQuery({
     queryKey: ['glucoseForAnalysis', startDate],
     queryFn: async () => {
-      const readings = await base44.entities.GlucoseReading.list('-date', 500);
+      const readings = await api.entities.GlucoseReading.list('-date', 500);
       return readings.filter(r => moment(r.date).isAfter(moment(startDate)));
     },
   });
@@ -25,19 +25,10 @@ export default function GlucoseTrendAnalysis({ daysToAnalyze = 14 }) {
   const { data: meals = [] } = useQuery({
     queryKey: ['mealsForAnalysis', startDate],
     queryFn: async () => {
-      const allMeals = await base44.entities.MealPlan.list('-date', 200);
+      const allMeals = await api.entities.MealPlan.list('-date', 200);
       return allMeals.filter(m => m.is_completed && moment(m.date).isAfter(moment(startDate)));
     },
   });
-
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
-  });
-
-  const userProfile = profile?.[0];
-  const targetMin = userProfile?.target_glucose_min || 70;
-  const targetMax = userProfile?.target_glucose_max || 140;
 
   const analyzeTrends = async () => {
     if (glucoseReadings.length < 10) {
@@ -47,86 +38,11 @@ export default function GlucoseTrendAnalysis({ daysToAnalyze = 14 }) {
 
     setAnalyzing(true);
     try {
-      // Calculate stats
-      const avgGlucose = Math.round(glucoseReadings.reduce((sum, r) => sum + r.reading, 0) / glucoseReadings.length);
-      const highReadings = glucoseReadings.filter(r => r.reading > targetMax).length;
-      const lowReadings = glucoseReadings.filter(r => r.reading < targetMin).length;
-      const timeInRange = Math.round((glucoseReadings.filter(r => r.reading >= targetMin && r.reading <= targetMax).length / glucoseReadings.length) * 100);
-
-      // Calculate nutrition stats
-      const avgCarbs = meals.length > 0 ? Math.round(meals.reduce((sum, m) => sum + (m.carbs || 0), 0) / meals.length) : 0;
-      const avgProtein = meals.length > 0 ? Math.round(meals.reduce((sum, m) => sum + (m.protein || 0), 0) / meals.length) : 0;
-      const avgFiber = meals.length > 0 ? Math.round(meals.reduce((sum, m) => sum + (m.fiber || 0), 0) / meals.length) : 0;
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze glucose trends and dietary patterns for a person with ${userProfile?.diabetes_type || 'type 2'} diabetes:
-
-        Glucose Data (${daysToAnalyze} days, ${glucoseReadings.length} readings):
-        - Average: ${avgGlucose} mg/dL
-        - Time in range (${targetMin}-${targetMax}): ${timeInRange}%
-        - High readings: ${highReadings} (${Math.round((highReadings / glucoseReadings.length) * 100)}%)
-        - Low readings: ${lowReadings} (${Math.round((lowReadings / glucoseReadings.length) * 100)}%)
-        
-        Dietary Data (${meals.length} logged meals):
-        - Average carbs per meal: ${avgCarbs}g
-        - Average protein per meal: ${avgProtein}g
-        - Average fiber per meal: ${avgFiber}g
-        
-        Provide:
-        1. Pattern analysis (identify trends and correlations)
-        2. Dietary change recommendations (be specific about what to adjust)
-        3. Meal timing suggestions
-        4. Priority actions for immediate improvement`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            overall_control: { 
-              type: "string",
-              enum: ["excellent", "good", "needs_improvement", "poor"]
-            },
-            patterns_identified: { 
-              type: "array", 
-              items: { type: "string" } 
-            },
-            dietary_recommendations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  change: { type: "string" },
-                  reason: { type: "string" },
-                  priority: { type: "string", enum: ["high", "medium", "low"] }
-                }
-              }
-            },
-            meal_timing_suggestions: { 
-              type: "array", 
-              items: { type: "string" } 
-            },
-            priority_actions: { 
-              type: "array", 
-              items: { type: "string" } 
-            }
-          }
-        }
-      });
-
-      setAnalysis({
-        ...result,
-        stats: {
-          avgGlucose,
-          timeInRange,
-          highReadings,
-          lowReadings,
-          totalReadings: glucoseReadings.length,
-          avgCarbs,
-          avgProtein,
-          avgFiber,
-          mealsLogged: meals.length
-        }
-      });
+      // The server computes the statistics from the user's own rows and returns them as result.stats.
+      const result = await api.ai.run('glucose-trends', { days: Math.min(90, Math.max(7, daysToAnalyze)) });
+      setAnalysis(result);
     } catch (error) {
-      toast.error('Failed to analyze trends');
+      toast.error(aiErrorMessage(error, 'Failed to analyze trends'));
     } finally {
       setAnalyzing(false);
     }

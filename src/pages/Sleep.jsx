@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -8,12 +8,11 @@ import {
   Moon, 
   Sun, 
   TrendingUp,
-  TrendingDown,
   Activity,
   Clock,
   Calendar
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from "@/lib/utils";
 
 import SleepLogger from '@/components/sleep/SleepLogger';
@@ -23,16 +22,16 @@ export default function Sleep() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: sleepLogs = [] } = useQuery({
     queryKey: ['sleepLogs'],
-    queryFn: () => base44.entities.SleepLog.list('-date', 30),
+    queryFn: () => api.entities.SleepLog.list('-date', 30),
   });
 
   const createSleepLogMutation = useMutation({
-    mutationFn: (data) => base44.entities.SleepLog.create(data),
+    mutationFn: (data) => api.entities.SleepLog.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sleepLogs'] }),
   });
 

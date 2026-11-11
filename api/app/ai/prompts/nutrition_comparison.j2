@@ -1,0 +1,23 @@
+Analyze nutrition adherence on {{ date }} for a person with {{ profile.diabetes_type }} diabetes:
+
+Planned ({{ planned.count }} meals):
+- Calories: {{ planned.calories }}
+- Carbs: {{ planned.carbs }}g
+- Protein: {{ planned.protein }}g
+- Fat: {{ planned.fat }}g
+- Fiber: {{ planned.fiber }}g
+
+Actually eaten ({{ eaten.count }} meals):
+- Calories: {{ eaten.calories }}
+- Carbs: {{ eaten.carbs }}g
+- Protein: {{ eaten.protein }}g
+- Fat: {{ eaten.fat }}g
+- Fiber: {{ eaten.fiber }}g
+
+Target glucose range: {{ profile.target_min }}-{{ profile.target_max }} mg/dL
+
+Provide:
+1. "adherence_percentage" (0-100)
+2. "key_differences" and their impact on diabetes management
+3. "recommendations": specific actionable steps
+4. "overall_assessment": one or two sentences

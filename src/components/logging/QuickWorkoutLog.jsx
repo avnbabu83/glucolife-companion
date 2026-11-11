@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import api, { aiErrorMessage } from '@/api/client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,30 +27,14 @@ export default function QuickWorkoutLog({ onSubmit }) {
 
     setGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze the following workout description and provide realistic estimates: "${workoutName}"
-        
-        Consider typical durations and calorie burn for this activity. If the description includes duration, use that. Otherwise suggest a typical duration.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            exercise_type: { 
-              type: "string",
-              enum: ["walking", "jogging", "running", "cycling", "swimming", "yoga", "pilates", "strength_training", "weight_lifting", "hiit", "stretching", "dance", "aerobics", "tennis", "badminton", "basketball", "football", "golf", "rowing", "elliptical", "stair_climbing", "boxing", "martial_arts", "gym_workout", "other"]
-            },
-            duration_minutes: { type: "number" },
-            calories_burned: { type: "number" },
-            intensity: { type: "string", enum: ["low", "moderate", "high"] }
-          }
-        }
-      });
+      const result = await api.ai.run('workout-estimate', { description: workoutName.trim().slice(0, 500) });
 
       if (result.exercise_type) setExerciseType(result.exercise_type);
       if (result.duration_minutes) setDuration(result.duration_minutes.toString());
       if (result.calories_burned) setCaloriesBurned(result.calories_burned.toString());
       toast.success('Workout details generated!');
     } catch (error) {
-      toast.error('Failed to generate workout details');
+      toast.error(aiErrorMessage(error, 'Failed to generate workout details'));
     } finally {
       setGenerating(false);
     }
@@ -60,7 +44,7 @@ export default function QuickWorkoutLog({ onSubmit }) {
     e.preventDefault();
     onSubmit({
       exercise_name: workoutName,
-      date: moment().format('YYYY-DD-DD'),
+      date: moment().format('YYYY-MM-DD'),
       actual_duration: duration ? parseInt(duration) : 0,
       status: 'completed',
       how_felt: howFelt,

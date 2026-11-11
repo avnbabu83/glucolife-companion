@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Mail, Calendar, Shield, Loader2, UserPlus, Copy, CheckCircle2 } from 'lucide-react';
+import { Users, Mail, Calendar, Shield, Loader2, UserPlus, Copy } from 'lucide-react';
 import { toast } from "sonner";
 import moment from 'moment';
 
@@ -24,7 +24,7 @@ export default function AdminUsers() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await base44.auth.me();
+        const user = await api.auth.me();
         if (user.email !== 'avn.babu@gmail.com') {
           window.location.href = '/';
           return;
@@ -41,13 +41,14 @@ export default function AdminUsers() {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['allUsers'],
-    queryFn: () => base44.entities.User.list('-created_date'),
+    // The API has no admin endpoint that lists other users (every route is user-scoped).
+    queryFn: async () => [],
     enabled: !!currentUser,
   });
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['allProfiles'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
     enabled: !!currentUser,
   });
 
@@ -59,7 +60,9 @@ export default function AdminUsers() {
 
     setCreating(true);
     try {
-      await base44.users.inviteUser(testEmail, testRole);
+      // Sign-up is open: any verified Apple or Google account creates its user on first sign-in,
+      // so there is no invite call in the new API.
+      throw new Error('Invites are not needed; ask the person to sign in with Apple or Google');
       setCreatedUsers([...createdUsers, { email: testEmail, role: testRole, created: new Date() }]);
       toast.success(`Test user invited: ${testEmail}`);
       setTestEmail('');
