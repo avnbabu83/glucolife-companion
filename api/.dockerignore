@@ -1,0 +1,11 @@
+.data/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+.env
+tests/
+migration_report.json
+openapi.json

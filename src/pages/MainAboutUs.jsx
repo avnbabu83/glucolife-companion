@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Users, Shield, Heart, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { getAccessToken } from '@/api/client';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
@@ -12,7 +12,7 @@ export default function MainAboutUs() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isAuth = await base44.auth.isAuthenticated();
+      const isAuth = Boolean(getAccessToken());
       if (isAuth) {
         // User is logged in, redirect to Home
         navigate(createPageUrl('Home'));
@@ -24,7 +24,7 @@ export default function MainAboutUs() {
   }, [navigate]);
 
   const handleSignUp = () => {
-    base44.auth.redirectToLogin('/Home');
+    navigate('/sign-in');
   };
 
   if (isChecking) {

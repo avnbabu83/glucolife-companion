@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "diabeteasy-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,12 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/api/ infra/cloudfront/",
+    "gen:entity-fields": "node scripts/gen-entity-fields.mjs",
+    "check:contract": "node scripts/gen-entity-fields.mjs --check && node scripts/check-api-contract.mjs && node scripts/check-no-base44.mjs"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.46",
-    "@base44/vite-plugin": "^1.0.35",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",

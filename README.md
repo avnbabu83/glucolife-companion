@@ -2,6 +2,44 @@
 
 A comprehensive diabetes management platform that helps users track glucose levels, manage meals, medications, exercise, and sleep patterns with AI-powered insights.
 
+## 🚧 Moving off Base44: phase 1 backend (`api/`)
+
+DiabetEasy's own backend lives in [`api/`](api/README.md). It is built with FastAPI and runs on PostgreSQL in production
+or SQLite locally. It provides Sign in with Apple and Google, the 10 health data tables, photo uploads, Claude-powered
+meal plans, exercise plans and insights, Libre and Fitbit sync, account deletion, the template-driven weekly insights
+email (`api/app/templates/email/weekly_insights.txt.j2`) and a one-time Base44 copy script.
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r api/requirements.txt -r api/requirements-dev.txt
+cd api && ../.venv/bin/alembic upgrade head && ../.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+# open http://localhost:8000/docs  ·  tests: cd api && ../.venv/bin/python -m pytest -q
+```
+
+## Phase 2: the web app runs on this API (no `@base44/sdk`)
+
+- `src/api/client.js` is the dependency-free API client (in-memory access token, shared cookie refresh, `ApiError`,
+  extra/created_date row adapter). Every component uses it; the AI cards call server-side tasks on `POST /api/v1/ai/{task}`.
+- `/sign-in` (Sign in with Apple + Google), `/fitbit/callback`, and a first-run consent → profile step.
+- Build-time identifiers (public, not secrets): `VITE_APPLE_SERVICES_ID`, `VITE_APPLE_REDIRECT_URI`, `VITE_GOOGLE_CLIENT_ID`
+  (see `.env.example`). Local dev: proxy `/api` to `http://localhost:8000` in your Vite config.
+
+```bash
+npm test                     # node --test src/api/ infra/cloudfront/  (Node 20)
+npm run lint
+npm run check:contract       # entity-fields.json drift, client vs api/openapi.json, no @base44 references
+npm run gen:entity-fields    # after regenerating api/openapi.json
+```
+
+Deploy: `.github/workflows/web.yml` (staging on merge to main, production by manual dispatch with approval).
+Cutover from Base44 (write freeze, final copy, weekly job switch, retiring `base44/functions/`): [`docs/cutover.md`](docs/cutover.md).
+Call-by-call mapping: `docs/phase2-call-inventory.md`.
+
+## Phase 3: iPhone app (`ios/`)
+
+A SwiftUI app on the same API: Apple/Google sign-in, all web screens in five tabs, Apple Health glucose import
+(`POST /api/v1/glucose/import`), photo upload, Libre/Fitbit, privacy consent with AI permission, and in-app account
+deletion. It is built and tested on GitHub's Macs; setup, TestFlight and App Store steps are in [`ios/README.md`](ios/README.md).
+
 ## 🌟 Features
 
 ### Core Functionality
@@ -127,3 +165,13 @@ Inspired by real challenges in daily diabetes management
 Powered by modern AI and cloud technologies
 Note: This application is for informational purposes only and should not replace professional medical advice, diagnosis, or treatment.
 
+
+## Phone app links (web bucket)
+
+`public/.well-known/apple-app-site-association` and `public/.well-known/assetlinks.json` are copied to the web build root.
+Before deploying, replace `TEAMID` with your Apple Team ID and `REPLACE_WITH_PLAY_APP_SIGNING_SHA256` with the SHA-256 of the
+Play app-signing certificate. Serve apple-app-site-association as `application/json` without redirects and exclude `/.well-known/*`
+from the SPA rewrite: `infra/cloudfront/spa-rewrite.js` is that CloudFront Function (cloudfront-js-2.0, viewer request).
+The API enables Dexcom when `DEXCOM_CLIENT_ID`, `DEXCOM_CLIENT_SECRET`, `DEXCOM_BASE_URL` and `DEXCOM_REDIRECT_URIS` are set
+(see `api/.env.example`); run `alembic upgrade head` to apply migration 0003. `public/app/index.html` is the `/app/*` fallback page. The real Dexcom tile appears only when
+`GET /api/v1/me` lists `dexcom` in `integrations_available`; `/dexcom/callback` finishes the Dexcom login.

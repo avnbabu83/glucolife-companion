@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, MapPin, Activity, Clock, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import api from '@/api/client';
 import { toast } from "sonner";
 
 export default function PrivacyConsent({ open, onComplete }) {
@@ -44,16 +44,19 @@ export default function PrivacyConsent({ open, onComplete }) {
 
   const handleSave = async () => {
     try {
-      const profiles = await base44.entities.UserProfile.list();
-      const profile = profiles[0];
-      
-      await base44.entities.UserProfile.update(profile.id, {
-        consent_location: consents.location,
-        consent_cgm: consents.cgm,
-        consent_wearables: consents.wearables,
-        consent_email: consents.email,
-        consent_given_at: new Date().toISOString()
-      });
+      const [existing] = await api.entities.PrivacyConsent.list(undefined, 1);
+      const consent = {
+        location: Boolean(consents.location),
+        cgm: Boolean(consents.cgm),
+        wearables: Boolean(consents.wearables),
+        email: Boolean(consents.email),
+        consented_at: new Date().toISOString()
+      };
+      if (existing) {
+        await api.entities.PrivacyConsent.update(existing.id, consent);
+      } else {
+        await api.entities.PrivacyConsent.create(consent);
+      }
       
       toast.success('Privacy preferences saved');
       onComplete();

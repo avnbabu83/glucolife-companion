@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,26 +34,26 @@ export default function Meals() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const { data: meals = [], isLoading } = useQuery({
     queryKey: ['meals', dateStr],
-    queryFn: () => base44.entities.MealPlan.filter({ date: dateStr }),
+    queryFn: () => api.entities.MealPlan.filter({ date: dateStr }),
   });
 
   const updateMealMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MealPlan.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.MealPlan.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meals'] }),
   });
 
   const deleteMealMutation = useMutation({
-    mutationFn: (id) => base44.entities.MealPlan.delete(id),
+    mutationFn: (id) => api.entities.MealPlan.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meals'] }),
   });
 
   const createMealsMutation = useMutation({
-    mutationFn: (meals) => base44.entities.MealPlan.bulkCreate(meals),
+    mutationFn: (meals) => api.entities.MealPlan.bulkCreate(meals),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
       setShowGenerator(false);
@@ -63,7 +62,7 @@ export default function Meals() {
   });
 
   const createMealMutation = useMutation({
-    mutationFn: (data) => base44.entities.MealPlan.create(data),
+    mutationFn: (data) => api.entities.MealPlan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
       toast.success('Food logged successfully!');
@@ -74,7 +73,7 @@ export default function Meals() {
   const clearUnloggedMutation = useMutation({
     mutationFn: async () => {
       const unloggedMeals = meals.filter(m => !m.is_completed);
-      await Promise.all(unloggedMeals.map(m => base44.entities.MealPlan.delete(m.id)));
+      await Promise.all(unloggedMeals.map(m => api.entities.MealPlan.delete(m.id)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meals'] });
@@ -99,14 +98,14 @@ export default function Meals() {
       });
 
       // Fetch ALL existing meals for these dates (both completed and incomplete)
-      const existingMealsQuery = await base44.entities.MealPlan.list('-date', 1000);
+      const existingMealsQuery = await api.entities.MealPlan.list('-date', 500); // API maximum
       const mealsToDelete = existingMealsQuery.filter(m => 
         datesToClear.includes(m.date) && !m.is_completed
       );
       
       // Delete old incomplete meals first
       if (mealsToDelete.length > 0) {
-        await Promise.all(mealsToDelete.map(m => base44.entities.MealPlan.delete(m.id)));
+        await Promise.all(mealsToDelete.map(m => api.entities.MealPlan.delete(m.id)));
       }
 
       // Small delay to ensure deletions are processed

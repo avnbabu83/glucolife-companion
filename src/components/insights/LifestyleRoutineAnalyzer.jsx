@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import api, { aiErrorMessage } from '@/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function LifestyleRoutineAnalyzer() {
 
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
-    queryFn: () => base44.entities.UserProfile.list(),
+    queryFn: () => api.entities.UserProfile.list(),
   });
 
   const userProfile = profile?.[0];
@@ -35,8 +35,8 @@ export default function LifestyleRoutineAnalyzer() {
 
   const mergeMutation = useMutation({
     mutationFn: async ({ meals, exercises }) => {
-      const mealPromises = meals.map(m => base44.entities.MealPlan.create(m));
-      const exercisePromises = exercises.map(e => base44.entities.ExercisePlan.create(e));
+      const mealPromises = meals.map(m => api.entities.MealPlan.create(m));
+      const exercisePromises = exercises.map(e => api.entities.ExercisePlan.create(e));
       await Promise.all([...mealPromises, ...exercisePromises]);
     },
     onSuccess: () => {
@@ -122,99 +122,16 @@ export default function LifestyleRoutineAnalyzer() {
 
     // Save routine to profile
     if (userProfile) {
-      await base44.entities.UserProfile.update(userProfile.id, { daily_routine: routine });
+      await api.entities.UserProfile.update(userProfile.id, { daily_routine: routine });
     }
 
     setAnalyzing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this daily routine for someone with diabetes and provide detailed, actionable recommendations:
-
-        "${routine}"
-        
-        User Profile:
-        - Diabetes Type: ${userProfile?.diabetes_type || 'type2'}
-        - Dietary Preference: ${userProfile?.dietary_preference || 'omnivore'}
-        ${userProfile?.allergies?.length > 0 ? `- Allergies: ${userProfile.allergies.join(', ')}` : ''}
-        
-        IMPORTANT: Respect the dietary preference strictly. If vegetarian/vegan, do NOT suggest any meat, poultry, fish, or animal products.
-        
-        Provide:
-        1. Schedule breakdown (extract times, activities, and meals)
-        2. Risk factors for diabetes management
-        3. Specific meal timing recommendations (respecting dietary preference)
-        4. Exercise opportunities within their schedule
-        5. Priority changes that fit their lifestyle
-        
-        Be practical and considerate of their constraints (work schedule, commute, etc).`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            schedule_breakdown: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  time: { type: "string" },
-                  activity: { type: "string" },
-                  category: { type: "string", enum: ["meal", "exercise", "work", "commute", "rest"] }
-                }
-              }
-            },
-            risk_factors: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  risk: { type: "string" },
-                  severity: { type: "string", enum: ["high", "medium", "low"] },
-                  impact: { type: "string" }
-                }
-              }
-            },
-            meal_recommendations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  meal: { type: "string" },
-                  suggested_time: { type: "string" },
-                  reasoning: { type: "string" },
-                  meal_ideas: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            exercise_opportunities: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  when: { type: "string" },
-                  activity: { type: "string" },
-                  duration: { type: "string" },
-                  how_to_fit: { type: "string" }
-                }
-              }
-            },
-            priority_changes: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  change: { type: "string" },
-                  why: { type: "string" },
-                  how: { type: "string" },
-                  priority: { type: "number" }
-                }
-              }
-            }
-          }
-        }
-      });
-
+      // The server adds the profile (diabetes type, dietary preference, allergies) to the prompt.
+      const result = await api.ai.run('routine-analysis', { routine: routine.slice(0, 4000) });
       setAnalysis(result);
     } catch (error) {
-      toast.error('Failed to analyze routine');
+      toast.error(aiErrorMessage(error, 'Failed to analyze routine'));
     } finally {
       setAnalyzing(false);
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus, Activity, Utensils, Pill, Moon } from 'lucide-react';
+import { Activity, Utensils, Pill, Moon } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';

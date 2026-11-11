@@ -1,0 +1,13 @@
+Generate weekly diabetes insights for user:
+
+Profile: {{ profile.diabetes_type or 'not set' }}, {{ profile.dietary_preference or 'no preference' }}
+Glucose readings this week (last 50): {% if readings %}{% for r in readings %}{{ r }}mg/dL{{ ', ' if not loop.last }}{% endfor %}{% else %}none logged{% endif %}
+{% if average is not none %}Average glucose this week: {{ average }} mg/dL
+{% endif %}Meals logged: {{ meals_logged }}
+Sleep quality: {{ sleep_quality }}
+
+Provide brief weekly summary with:
+- Overall glucose control ("summary")
+- Key achievements ("achievements")
+- Areas to improve ("improvements")
+- Top 3 action items ("action_items")
