@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.diabeteasy.app"],
+        "components": [{ "/": "/app/*", "comment": "Dexcom callback and other app links" }]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.diabeteasy.app"]
+  }
+}

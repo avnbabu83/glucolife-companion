@@ -1,19 +1,26 @@
-import base44 from "@base44/vite-plugin"
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { fileURLToPath, URL } from 'node:url';
 
-// https://vite.dev/config/
+// Web app build. The API is same-origin under /api; in development it is proxied to the local API.
+const apiTarget = process.env.API_PROXY_TARGET || 'http://localhost:8000';
+
 export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
-  plugins: [
-    base44({
-      // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
-      // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
-      legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true',
-      hmrNotifier: true,
-      navigationNotifier: true,
-      visualEditAgent: true
-    }),
-    react(),
-  ]
+  plugins: [react()],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
+  server: {
+    host: true,
+    allowedHosts: true,
+    proxy: {
+      '/api': { target: apiTarget, changeOrigin: true },
+      '/healthz': { target: apiTarget, changeOrigin: true },
+    },
+  },
+  preview: {
+    host: true,
+    allowedHosts: true,
+    port: Number(process.env.PORT) || 4173,
+  },
 });

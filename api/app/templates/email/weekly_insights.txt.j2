@@ -1,0 +1,29 @@
+Hi {{ name }},
+
+Here are your diabetes insights for this week:
+
+{{ summary }}
+
+🎉 Achievements:
+{% for item in achievements %}
+• {{ item }}
+{% else %}
+Keep logging your data!
+{% endfor %}
+
+💡 Areas to Improve:
+{% for item in improvements %}
+• {{ item }}
+{% else %}
+You're doing great!
+{% endfor %}
+
+✅ Action Items:
+{% for item in action_items %}
+{{ loop.index }}. {{ item }}
+{% else %}
+Keep up the good work!
+{% endfor %}
+
+Stay healthy,
+DiabetEasy Team

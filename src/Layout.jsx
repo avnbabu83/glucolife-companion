@@ -1,19 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import moment from 'moment';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
-import { 
-  Home, 
-  Utensils, 
-  Activity, 
-  Pill, 
-  Dumbbell, 
-  Moon,
+import api from '@/api/client';
+import {
+  Home,
+  ClipboardList,
+  CalendarCheck,
+  Sparkles,
   User,
-  Users
+  Bell,
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
+
+// Daily Bento shell: frosted top bar (avatar, date, bell) and a frosted
+// bottom tab bar (Today, Log, Plans, Insights, Profile). Every page that was
+// in the old navigation is still reachable through the section pills.
+const SECTIONS = [
+  { name: 'Today', icon: Home, page: 'Home', hash: '', pages: ['Home'] },
+  { name: 'Log', icon: ClipboardList, page: 'Glucose', pages: ['Glucose', 'CGMDashboard', 'Sleep'] },
+  { name: 'Plans', icon: CalendarCheck, page: 'Meals', pages: ['Meals', 'Exercise', 'Medications'] },
+  { name: 'Insights', icon: Sparkles, page: 'Home', hash: '#insights', pages: [] },
+  { name: 'Profile', icon: User, page: 'Profile', pages: ['Profile', 'AdminUsers'] },
+];
+
+const PILLS = {
+  Log: [
+    { label: 'Glucose', page: 'Glucose' },
+    { label: 'CGM', page: 'CGMDashboard' },
+    { label: 'Sleep', page: 'Sleep' },
+  ],
+  Plans: [
+    { label: 'Meals', page: 'Meals' },
+    { label: 'Exercise', page: 'Exercise' },
+    { label: 'Meds', page: 'Medications' },
+  ],
+};
 
 export default function Layout({ children }) {
   const location = useLocation();
@@ -23,7 +46,7 @@ export default function Layout({ children }) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const user = await base44.auth.me();
+        const user = await api.auth.me();
         setCurrentUser(user);
       } catch (error) {
         // User not authenticated
@@ -32,116 +55,89 @@ export default function Layout({ children }) {
     loadUser();
   }, []);
 
-  const navItems = [
-    { name: 'Home', icon: Home, path: createPageUrl('Home') },
-    { name: 'CGM', icon: Activity, path: createPageUrl('CGMDashboard') },
-    { name: 'Meals', icon: Utensils, path: createPageUrl('Meals') },
-    { name: 'Meds', icon: Pill, path: createPageUrl('Medications') },
-    { name: 'Exercise', icon: Dumbbell, path: createPageUrl('Exercise') },
-    { name: 'Sleep', icon: Moon, path: createPageUrl('Sleep') },
-    { name: 'Profile', icon: User, path: createPageUrl('Profile') },
+  const isPage = (page) => currentPath === createPageUrl(page) || currentPath.includes(page);
+  const isInsights = location.hash === '#insights';
+  const active = SECTIONS.find((s) =>
+    s.name === 'Insights' ? isInsights && isPage('Home')
+      : s.name === 'Today' ? isPage('Home') && !isInsights
+      : s.pages.some(isPage)
+  );
+
+  const pills = [
+    ...(PILLS[active?.name] || []),
+    ...(active?.name === 'Profile' && currentUser?.role === 'admin' ? [{ label: 'Admin', page: 'AdminUsers' }] : []),
   ];
+  const profilePills = active?.name === 'Profile' && pills.length === 1 ? [{ label: 'Profile', page: 'Profile' }, ...pills] : pills;
 
-  const adminNavItems = currentUser?.role === 'admin' ? [
-    { name: 'Admin', icon: Users, path: createPageUrl('AdminUsers') },
-  ] : [];
-
-  const allNavItems = [...navItems, ...adminNavItems];
+  const initials = (currentUser?.full_name || currentUser?.email || '?').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       <Toaster position="top-center" richColors />
-      
+
+      {/* Frosted top bar */}
+      <header className="glass-bar fixed top-0 inset-x-0 z-50 border-b">
+        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
+          <Link
+            to={createPageUrl('Profile')}
+            aria-label="Profile"
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center font-display font-bold text-sm"
+          >
+            {initials}
+          </Link>
+          <span className="text-sm font-medium text-slate-600">{moment().format('ddd, D MMM')}</span>
+          <Link
+            to={createPageUrl('Home')}
+            aria-label="Reminders"
+            className="w-9 h-9 rounded-full bg-white/70 flex items-center justify-center text-slate-600 hover:text-emerald-600 transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+          </Link>
+        </div>
+        {profilePills.length > 0 && (
+          <div className="max-w-3xl mx-auto flex gap-2 px-4 pb-2 overflow-x-auto">
+            {profilePills.map((p) => (
+              <Link
+                key={p.page}
+                to={createPageUrl(p.page)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  isPage(p.page) ? "bg-emerald-500 text-white" : "bg-white/70 text-slate-600 hover:text-emerald-600"
+                )}
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </header>
+
       {/* Main Content */}
-      <main className="pb-20 lg:pb-0 lg:pl-20">
+      <main className={cn("pb-24", profilePills.length > 0 ? "pt-28" : "pt-16")}>
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 lg:hidden z-50">
-        <div className="flex items-center justify-around py-2">
-          {allNavItems.map((item) => {
-            const isActive = currentPath === item.path || 
-              (item.path.includes(item.name) && currentPath.includes(item.name));
+      {/* Frosted bottom tab bar */}
+      <nav className="glass-bar fixed bottom-0 inset-x-0 z-50 border-t" aria-label="Main">
+        <div className="max-w-3xl mx-auto flex items-center justify-around py-2">
+          {SECTIONS.map((item) => {
+            const isActive = active?.name === item.name;
             return (
               <Link
                 key={item.name}
-                to={item.path}
+                to={createPageUrl(item.page) + (item.hash || '')}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  "flex flex-col items-center py-2 px-3 rounded-xl transition-all",
-                  isActive 
-                    ? "text-emerald-600" 
-                    : "text-slate-400 hover:text-slate-600"
+                  "flex flex-col items-center py-1.5 px-3 rounded-2xl transition-colors",
+                  isActive ? "text-emerald-600 bg-emerald-50/80" : "text-slate-500 hover:text-slate-700"
                 )}
               >
-                <item.icon className={cn(
-                  "w-5 h-5",
-                  isActive && "stroke-[2.5px]"
-                )} />
-                <span className="text-[10px] mt-1 font-medium">{item.name}</span>
+                <item.icon className={cn("w-5 h-5", isActive && "stroke-[2.5px]")} />
+                <span className="text-[11px] mt-0.5 font-medium">{item.name}</span>
               </Link>
             );
           })}
         </div>
-      </nav>
-
-      {/* Desktop Side Navigation */}
-      <nav className="fixed left-0 top-0 bottom-0 w-20 bg-white border-r border-slate-200 hidden lg:flex flex-col items-center py-6 z-50">
-        <div className="mb-8">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 flex items-center justify-center shadow-lg group hover:scale-110 transition-transform cursor-pointer">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-300 to-transparent opacity-30 rounded-xl"></div>
-            <svg className="w-6 h-6 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
-              <path d="M12 16v-4" strokeWidth="3" />
-              <circle cx="12" cy="18" r="0.5" fill="currentColor" strokeWidth="0" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center gap-2">
-          {allNavItems.map((item) => {
-            const isActive = currentPath === item.path || 
-              (item.path.includes(item.name) && currentPath.includes(item.name));
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={cn(
-                  "flex flex-col items-center py-3 px-4 rounded-xl transition-all w-full",
-                  isActive 
-                    ? "bg-emerald-50 text-emerald-600" 
-                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                )}
-              >
-                <item.icon className={cn(
-                  "w-5 h-5",
-                  isActive && "stroke-[2.5px]"
-                )} />
-                <span className="text-[10px] mt-1 font-medium">{item.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        <Link
-          to={createPageUrl('Profile')}
-          className={cn(
-            "flex flex-col items-center py-3 px-4 rounded-xl transition-all relative group",
-            currentPath.includes('Profile')
-              ? "bg-emerald-50 text-emerald-600" 
-              : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-          )}
-        >
-          <div className={cn(
-            "w-9 h-9 rounded-full flex items-center justify-center transition-all",
-            currentPath.includes('Profile')
-              ? "bg-emerald-600 text-white ring-2 ring-emerald-200"
-              : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
-          )}>
-            <User className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] mt-1 font-medium">Profile</span>
-        </Link>
       </nav>
     </div>
   );
